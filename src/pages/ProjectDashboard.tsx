@@ -31,9 +31,16 @@ export default function ProjectDashboard() {
 
   const handleCreateProject = async () => {
     try {
+      // For now, as we don't have auth implemented yet, we'll use a temporary fixed user_id
+      const tempUserId = "00000000-0000-0000-0000-000000000000";
+      
       const { data, error } = await supabase
         .from("projects")
-        .insert([{ title: newProject.title, description: newProject.description }])
+        .insert([{ 
+          title: newProject.title, 
+          description: newProject.description,
+          user_id: tempUserId // Add the required user_id
+        }])
         .select()
         .single();
 
@@ -48,6 +55,7 @@ export default function ProjectDashboard() {
       setNewProject({ title: "", description: "" });
       navigate(`/projects/${data.id}`);
     } catch (error) {
+      console.error("Error creating project:", error);
       toast({
         title: "Error",
         description: "Failed to create project. Please try again.",
