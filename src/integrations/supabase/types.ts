@@ -9,13 +9,50 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      item_attachments: {
+        Row: {
+          attachment_type: string
+          created_at: string
+          id: string
+          item_id: string | null
+          label: string | null
+          url: string
+        }
+        Insert: {
+          attachment_type: string
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          label?: string | null
+          url: string
+        }
+        Update: {
+          attachment_type?: string
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          label?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_attachments_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       items: {
         Row: {
           content: string
           created_at: string
           id: string
+          image_url: string | null
           is_checklist: boolean
           is_completed: boolean | null
+          linked_url: string | null
           parent_id: string | null
           position: number
           project_id: string
@@ -25,8 +62,10 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          image_url?: string | null
           is_checklist?: boolean
           is_completed?: boolean | null
+          linked_url?: string | null
           parent_id?: string | null
           position?: number
           project_id: string
@@ -36,8 +75,10 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          image_url?: string | null
           is_checklist?: boolean
           is_completed?: boolean | null
+          linked_url?: string | null
           parent_id?: string | null
           position?: number
           project_id?: string

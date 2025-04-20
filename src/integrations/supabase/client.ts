@@ -2,10 +2,56 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://lgplhtxxbihdwktjessj.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxncGxodHh4YmloZHdrdGplc3NqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxODExNTQsImV4cCI6MjA2MDc1NzE1NH0.IsNG5FCKgOzDA1xTHxlr-uZfBUdTtlbhkDmcsRGC-4g";
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Supabase URL or Anon Key is missing from environment variables.');
+}
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+
+// Function to upload image to Supabase Storage
+export const uploadImage = async (file: File, bucket: string = 'itemimages'): Promise<string> => {
+  if (!file) {
+    throw new Error('No file provided for upload.');
+  }
+
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${Math.random()}.${fileExt}`; // Simple random name
+  const filePath = `${fileName}`;
+
+  console.log('[uploadImage] Attempting to upload:', { fileName, filePath, bucket, size: file.size });
+
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .upload(filePath, file, {
+      cacheControl: '3600', // Cache for 1 hour
+      upsert: false, // Don't overwrite existing files (though unlikely with random names)
+    });
+
+  if (error) {
+    console.error('[uploadImage] Supabase storage error:', error);
+    throw new Error(`Storage Error: ${error.message}`);
+  }
+
+  console.log('[uploadImage] Upload successful:', data);
+
+  // Get public URL using Supabase helper
+  const { data: publicUrlData } = supabase.storage
+    .from(bucket)
+    .getPublicUrl(filePath);
+
+  if (!publicUrlData) {
+    console.error('[uploadImage] Failed to get public URL.');
+    throw new Error('Failed to get public URL after upload.');
+  }
+
+  // const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${filePath}`; // Remove manual construction
+  console.log('[uploadImage] Public URL:', publicUrlData.publicUrl);
+
+  return publicUrlData.publicUrl;
+};

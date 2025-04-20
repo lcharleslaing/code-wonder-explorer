@@ -1,4 +1,4 @@
-
+import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
 import ItemList from "@/components/ItemList";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+
+// URL Regex (simple version, corrected)
+const URL_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/;
 
 export default function ProjectPage() {
   const { id: projectId } = useParams();
@@ -30,13 +36,13 @@ export default function ProjectPage() {
     enabled: !!projectId && !!user,
   });
 
-  // Fetch project items
+  // Fetch project items and their attachments
   const { data: items, isLoading: itemsLoading } = useQuery({
     queryKey: ["items", projectId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("items")
-        .select("*")
+        .select("*, item_attachments(*)")
         .eq("project_id", projectId)
         .order("position");
       if (error) throw error;
@@ -45,26 +51,67 @@ export default function ProjectPage() {
     enabled: !!projectId && !!user,
   });
 
-  // Add root note/checklist
-  const addRootItem = async (params: {
-    content: string;
-    is_checklist: boolean;
-  }) => {
+  // Update Add Root Item logic
+  const addRootItem = async (params: { content: string }) => {
     if (!projectId || !user) return;
-    const { error } = await supabase.from("items").insert([
-      {
-        content: params.content,
-        project_id: projectId,
-        is_checklist: params.is_checklist,
-        position: (items?.length ?? 0) + 1,
-      },
-    ]);
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Added!", description: "Item added." });
-      queryClient.invalidateQueries({ queryKey: ["items", projectId] });
+
+    const originalContent = params.content.trim(); // Keep original for URL check
+    let finalContent = originalContent;
+    let isChecklist = true;
+    // let linkedUrl: string | null = null; // Remove direct link saving
+
+    // Check for note prefix
+    if (finalContent.startsWith('-')) {
+      isChecklist = false;
+      finalContent = finalContent.substring(1).trimStart();
     }
+
+    // --- Step 1: Insert the main item ---
+    const { data: newItemData, error: itemError } = await supabase
+      .from("items")
+      .insert([
+        {
+          content: finalContent,
+          project_id: projectId,
+          is_checklist: isChecklist,
+          position: (items?.length ?? 0) + 1,
+          // linked_url: linkedUrl, // Remove direct link saving
+        },
+      ])
+      .select() // Select the newly created item to get its ID
+      .single(); // Expecting only one item back
+
+    if (itemError || !newItemData) {
+      toast({ title: "Error Creating Item", description: itemError?.message || "Failed to get new item data.", variant: "destructive" });
+      return; // Stop if item creation failed
+    }
+
+    const newItemId = newItemData.id;
+    console.log('Created item with ID:', newItemId);
+
+    // --- Step 2: Check original content for URL and add attachment if found ---
+    const urlMatch = originalContent.match(URL_REGEX); // Check original content
+    if (urlMatch) {
+      const detectedUrl = urlMatch[0];
+      console.log('Found URL, creating attachment:', detectedUrl);
+      const { error: attachmentError } = await supabase
+        .from("item_attachments")
+        .insert({
+          item_id: newItemId,
+          attachment_type: 'url',
+          url: detectedUrl,
+          // label: getHostname(detectedUrl) // Optional: Add label later if needed
+        });
+
+      if (attachmentError) {
+        toast({ title: "Warning", description: `Item created, but failed to attach URL: ${attachmentError.message}`, variant: "destructive" });
+        // Don't return, item was still created
+      }
+    }
+
+    // --- Step 3: Show success and invalidate ---
+    toast({ title: "Added!", description: "Item added." });
+    queryClient.invalidateQueries({ queryKey: ["items", projectId] });
   };
 
   if (projectLoading || itemsLoading) {
@@ -97,43 +144,49 @@ export default function ProjectPage() {
         </div>
       </div>
       <div>
-        <h2 className="font-semibold text-xl mb-4">Notes & Checklists</h2>
+        <h2 className="font-semibold text-xl mb-4">{project.title} Tasks & Notes</h2>
         <ItemList items={items || []} projectId={projectId as string} parentId={null} />
       </div>
     </div>
   );
 }
 
-function AddItemForm({ onAdd }: { onAdd: (params: { content: string; is_checklist: boolean }) => void }) {
-  const [content, setContent] = React.useState("");
-  const [isChecklist, setIsChecklist] = React.useState(false);
+function AddItemForm({ onAdd }: { onAdd: (params: { content: string }) => void }) {
+  const [content, setContent] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [content]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedContent = content.trim();
+    if (!trimmedContent) return;
+    onAdd({ content: trimmedContent });
+    setContent("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+  };
+
   return (
     <form
-      onSubmit={e => {
-        e.preventDefault();
-        if (!content.trim()) return;
-        onAdd({ content, is_checklist: isChecklist });
-        setContent("");
-        setIsChecklist(false);
-      }}
-      className="flex gap-2 items-center"
+      onSubmit={handleSubmit}
+      className="flex flex-col sm:flex-row gap-2 items-start sm:items-center w-full"
     >
-      <Input
-        className="w-[220px]"
-        placeholder="New note or checklist..."
+      <Textarea
+        ref={textareaRef}
+        className="flex-grow min-h-[40px] resize-none overflow-hidden"
+        placeholder="New Task (or '- ' for Note)..."
         value={content}
         onChange={e => setContent(e.target.value)}
         required
+        rows={1}
       />
-      <label className="inline-flex items-center text-sm gap-1 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={isChecklist}
-          onChange={e => setIsChecklist(e.target.checked)}
-          className="accent-primary h-4 w-4 mr-1"
-        />
-        Checklist
-      </label>
       <Button type="submit">Add</Button>
     </form>
   );
