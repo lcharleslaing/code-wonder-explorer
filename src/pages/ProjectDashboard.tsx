@@ -16,7 +16,7 @@ export default function ProjectDashboard() {
   const [isCreating, setIsCreating] = useState(false);
   const [newProject, setNewProject] = useState({ title: "", description: "" });
 
-  const { data: projects, isLoading } = useQuery({
+  const { data: projects, isLoading, refetch } = useQuery({
     queryKey: ["projects"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -41,10 +41,12 @@ export default function ProjectDashboard() {
           description: newProject.description,
           user_id: tempUserId // Add the required user_id
         }])
-        .select()
-        .single();
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error creating project:", error);
+        throw error;
+      }
 
       toast({
         title: "Success",
@@ -53,7 +55,14 @@ export default function ProjectDashboard() {
 
       setIsCreating(false);
       setNewProject({ title: "", description: "" });
-      navigate(`/projects/${data.id}`);
+      
+      // Refresh the projects list
+      refetch();
+      
+      // Only navigate if we have data
+      if (data && data.length > 0) {
+        navigate(`/projects/${data[0].id}`);
+      }
     } catch (error) {
       console.error("Error creating project:", error);
       toast({
