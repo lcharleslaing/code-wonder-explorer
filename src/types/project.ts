@@ -4,6 +4,7 @@ export interface Project {
   description: string | null;
   created_at: string;
   updated_at: string;
+  items?: Item[]; // Add items array to the Project interface
 }
 
 // Define the new ItemAttachment interface

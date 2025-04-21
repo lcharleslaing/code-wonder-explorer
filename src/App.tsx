@@ -8,6 +8,7 @@ import ProjectDashboard from "./pages/ProjectDashboard";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import ProjectPage from "./pages/ProjectPage";
+import { Layout } from "./components/Layout";
 
 const queryClient = new QueryClient();
 
@@ -18,9 +19,11 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<ProjectDashboard />} />
+          <Route element={<Layout />}>
+            <Route path="/" element={<ProjectDashboard />} />
+            <Route path="/projects/:id" element={<ProjectPage />} />
+          </Route>
           <Route path="/auth" element={<Auth />} />
-          <Route path="/projects/:id" element={<ProjectPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

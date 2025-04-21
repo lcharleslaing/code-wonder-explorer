@@ -407,7 +407,7 @@ function ItemRow({
         ) : (
           <FileText className="text-blue-600 mt-1 flex-shrink-0" />
         )}
-        <div className="flex-grow flex flex-col gap-1">
+        <div className="flex-grow flex flex-col gap-1 min-w-0">
           {editing ? (
             <div className="flex-grow flex flex-col gap-1">
               <Textarea
@@ -452,10 +452,51 @@ function ItemRow({
               {item.content}
             </span>
           )}
-        </div>
-        <div className="flex items-start gap-1 ml-auto flex-shrink-0">
+
+          {/* Attachments section moved here - inside the content container */}
+          {!editing && item.item_attachments && item.item_attachments.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {item.item_attachments.map(att => (
+                <div key={att.id}>
+                  {att.attachment_type === 'url' && att.url && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      asChild
+                    >
+                      <a href={att.url} target="_blank" rel="noopener noreferrer">
+                        <LinkIcon className="mr-1 h-3 w-3" />
+                        {getHostname(att.url)}
+                      </a>
+                    </Button>
+                  )}
+                  {att.attachment_type === 'image' && att.url && (
+                    <Dialog open={showImagePreview} onOpenChange={setShowImagePreview}>
+                      <DialogTrigger asChild>
+                        <img
+                          src={att.url}
+                          alt={att.label || "Attached image thumbnail"}
+                          className="max-w-[80px] max-h-[60px] rounded border cursor-pointer object-cover hover:opacity-80 transition-opacity"
+                        />
+                      </DialogTrigger>
+                      <DialogContent className="max-w-4xl p-2">
+                        <img
+                          src={att.url}
+                          alt={att.label || "Attached image preview"}
+                          className="max-w-full max-h-[80vh] object-contain mx-auto"
+                        />
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Action buttons now below content and attachments */}
           {!editing && (
-            <>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
               <input
                 type="file"
                 ref={fileInputRef}
@@ -465,73 +506,49 @@ function ItemRow({
                 id={`file-upload-${item.id}`}
               />
               <Button
-                variant="ghost"
-                size="icon"
+                variant="outline"
+                size="sm"
                 title="Attach Image"
-                className="mt-0.5"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={addImageAttachmentMutation.isPending}
+                className="h-8"
               >
-                <Paperclip className="w-4 h-4" />
+                <Paperclip className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">Attach</span>
               </Button>
-            </>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEditing(true)}
+                title="Edit"
+                className="h-8"
+              >
+                <Pencil className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">Edit</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={deleteItem}
+                title="Delete"
+                className="h-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">Delete</span>
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="h-8"
+                onClick={() => setAddingChild(!addingChild)}
+              >
+                <span className="mr-1 sm:mr-1">+</span>
+                <span className="hidden sm:inline">Add child</span>
+              </Button>
+            </div>
           )}
-          {!editing && (
-            <Button variant="ghost" size="icon" onClick={() => setEditing(true)} title="Edit" className="mt-0.5"><Pencil className="w-4 h-4" /></Button>
-          )}
-          {!editing && (
-            <Button variant="ghost" size="icon" onClick={deleteItem} title="Delete" className="mt-0.5"><Trash2 className="w-4 h-4" /></Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mt-0.5"
-            onClick={() => setAddingChild(!addingChild)}
-          >
-            + Add child
-          </Button>
         </div>
       </div>
-
-      {!editing && item.item_attachments && item.item_attachments.length > 0 && (
-        <div className="ml-6 mt-2 flex flex-wrap gap-2">
-          {item.item_attachments.map(att => (
-            <div key={att.id}>
-              {att.attachment_type === 'url' && att.url && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs"
-                  asChild
-                >
-                  <a href={att.url} target="_blank" rel="noopener noreferrer">
-                    <LinkIcon className="mr-1 h-3 w-3" />
-                    {getHostname(att.url)}
-                  </a>
-                </Button>
-              )}
-              {att.attachment_type === 'image' && att.url && (
-                <Dialog open={showImagePreview} onOpenChange={setShowImagePreview}>
-                  <DialogTrigger asChild>
-                    <img
-                      src={att.url}
-                      alt={att.label || "Attached image thumbnail"}
-                      className="max-w-[80px] max-h-[60px] rounded border cursor-pointer object-cover hover:opacity-80 transition-opacity"
-                    />
-                  </DialogTrigger>
-                  <DialogContent className="max-w-4xl p-2">
-                    <img
-                      src={att.url}
-                      alt={att.label || "Attached image preview"}
-                      className="max-w-full max-h-[80vh] object-contain mx-auto"
-                    />
-                  </DialogContent>
-                </Dialog>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
 
       <AlertDialog open={showCompleteConfirm} onOpenChange={setShowCompleteConfirm}>
         <AlertDialogContent>
@@ -554,7 +571,7 @@ function ItemRow({
             e.preventDefault();
             addChild();
           }}
-          className="flex gap-2 items-center ml-6 mt-2"
+          className="flex gap-2 items-center pl-3 ml-0 mt-2 border-l-2 border-blue-200"
         >
           <Input
             className="border rounded px-2 py-1 text-sm flex-grow"
@@ -565,7 +582,7 @@ function ItemRow({
           <Button type="submit" size="sm">Add</Button>
         </form>
       )}
-      <div className="ml-8 mt-3">
+      <div className="mt-3 pl-3 border-l-2 border-blue-200">
         <ItemList items={allItems} projectId={projectId} parentId={item.id} />
       </div>
     </div>

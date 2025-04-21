@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +10,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/use-toast";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
-import { LogoutButton } from "@/components/LogoutButton";
 
 export default function ProjectDashboard() {
   const navigate = useNavigate();
@@ -20,33 +18,61 @@ export default function ProjectDashboard() {
   const [isCreating, setIsCreating] = useState(false);
   const [newProject, setNewProject] = useState({ title: "", description: "" });
 
+  const { data: projects, isLoading, refetch } = useQuery({
+    queryKey: ["projects"],
+    queryFn: async () => {
+      if (!user) return [] as Project[];
+
+      // First get all projects
+      const { data: projectsData, error: projectsError } = await supabase
+        .from("projects")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .eq("user_id", user.id);
+
+      if (projectsError) throw projectsError;
+
+      // For each project, fetch its items with their attachments
+      const projectsWithItems = await Promise.all(
+        (projectsData as Project[]).map(async (project) => {
+          const { data: itemsData, error: itemsError } = await supabase
+            .from("items")
+            .select(`
+              *,
+              item_attachments(*)
+            `)
+            .eq("project_id", project.id)
+            .order("position", { ascending: true });
+
+          if (itemsError) {
+            console.error("Error fetching items for project", project.id, itemsError);
+            return project;
+          }
+
+          return {
+            ...project,
+            items: itemsData
+          };
+        })
+      );
+
+      return projectsWithItems as Project[];
+    },
+    enabled: !!user && !authLoading,
+  });
+
   // Redirect to /auth if not logged in, but wait for auth status check
   if (!authLoading && !user) {
     navigate("/auth");
     return null;
   }
 
-  const { data: projects, isLoading, refetch } = useQuery({
-    queryKey: ["projects"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("projects")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .eq("user_id", user?.id);
-
-      if (error) throw error;
-      return data as Project[];
-    },
-    enabled: !!user,
-  });
-
   const handleCreateProject = async () => {
     try {
       const { data, error } = await supabase
         .from("projects")
-        .insert([{ 
-          title: newProject.title, 
+        .insert([{
+          title: newProject.title,
           description: newProject.description,
           user_id: user!.id // Must be logged in to create project
         }])
@@ -79,48 +105,45 @@ export default function ProjectDashboard() {
   };
 
   if (authLoading || isLoading) {
-    return <div>Loading projects...</div>;
+    return <div className="container mx-auto flex items-center justify-center h-[70vh]">Loading projects...</div>;
   }
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Projects</h1>
-        <div className="flex gap-2 items-center">
-          <Dialog open={isCreating} onOpenChange={setIsCreating}>
-            <DialogTrigger asChild>
-              <Button>Create Project</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create New Project</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <Input
-                  placeholder="Project title"
-                  value={newProject.title}
-                  onChange={(e) =>
-                    setNewProject((prev) => ({ ...prev, title: e.target.value }))
-                  }
-                />
-                <Textarea
-                  placeholder="Project description (optional)"
-                  value={newProject.description}
-                  onChange={(e) =>
-                    setNewProject((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                />
-                <Button onClick={handleCreateProject} disabled={!newProject.title}>
-                  Create
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-          <LogoutButton />
-        </div>
+        <Dialog open={isCreating} onOpenChange={setIsCreating}>
+          <DialogTrigger asChild>
+            <Button>Create Project</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Project</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <Input
+                placeholder="Project title"
+                value={newProject.title}
+                onChange={(e) =>
+                  setNewProject((prev) => ({ ...prev, title: e.target.value }))
+                }
+              />
+              <Textarea
+                placeholder="Project description (optional)"
+                value={newProject.description}
+                onChange={(e) =>
+                  setNewProject((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
+              />
+              <Button onClick={handleCreateProject} disabled={!newProject.title}>
+                Create
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {projects?.map((project) => (
