@@ -3,7 +3,7 @@ import { supabase, uploadImage } from "@/integrations/supabase/client";
 import { Item } from "@/types/project";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
-import { useState, useRef, useEffect, createContext, useContext } from "react";
+import { useState, useRef, useEffect, createContext, useContext, useCallback } from "react";
 import { SquareCheck, Pencil, FileText, ListCheck, Trash2, LinkIcon, Paperclip, ChevronRight, ChevronDown, MoveHorizontal, FolderOpen, FolderClosed, Eye, EyeOff, Copy, CheckSquare, MessageSquare, GripVertical, CircleUserRound, CircleX, ClipboardCopy, Edit2, Plus, Square } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,20 +27,22 @@ import {
 } from "@/components/ui/dialog"
 import {
   DndContext,
-  closestCenter,
-  KeyboardSensor,
+  DragEndEvent,
+  DragOverEvent,
+  DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent
-} from '@dnd-kit/core';
+  closestCenter,
+  KeyboardSensor,
+} from "@dnd-kit/core";
 import {
-  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
-  verticalListSortingStrategy
-} from '@dnd-kit/sortable';
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
 import { CSS } from '@dnd-kit/utilities';
 import { updateProjectTimestamp } from "@/utils/updateProjectTimestamp";
 
@@ -74,33 +76,110 @@ export const ProjectControlsContext = createContext<ProjectControlsContextType>(
   updateHasChildren: () => { },
 });
 
-// Add this new component to export
-export function ProjectControlsProvider({ children }: { children: React.ReactNode }) {
-  const [focusMode, setFocusMode] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [hasChildren, setHasChildren] = useState(false);
+// Add this new context for the Alt key state
+export const AltKeyContext = createContext<boolean>(false);
 
-  const toggleFocusMode = () => setFocusMode(!focusMode);
-  const toggleCollapsed = () => setIsCollapsed(!isCollapsed);
+export function ProjectControlsProvider({ children, projectId }: { children: React.ReactNode, projectId?: string }) {
+  // Get saved states from localStorage with project-specific keys if projectId is available
+  const storageKeyPrefix = projectId ? `project_${projectId}_` : 'global_';
+  
+  const [focusMode, setFocusMode] = useState(() => {
+    const savedMode = localStorage.getItem(`${storageKeyPrefix}focusMode`);
+    return savedMode === 'true';
+  });
+  
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const savedCollapsed = localStorage.getItem(`${storageKeyPrefix}isCollapsed`);
+    return savedCollapsed === 'true';
+  });
+  
+  const [hasChildren, setHasChildren] = useState(false);
+  
+  // Add global Alt key tracking
+  const [isAltPressed, setIsAltPressed] = useState(false);
+
+  // Add effect to listen for Alt key press/release at the provider level
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Alt') {
+        setIsAltPressed(true);
+      }
+    };
+    
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Alt') {
+        setIsAltPressed(false);
+      }
+    };
+    
+    // Add event listeners
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
+  const toggleFocusMode = useCallback(() => setFocusMode(prev => !prev), []);
+  
+  // Improved toggle function with better state handling
+  const toggleCollapsed = useCallback(() => {
+    setIsCollapsed(prev => {
+      const newState = !prev;
+      
+      // Force update localStorage immediately for global state
+      localStorage.setItem(`${storageKeyPrefix}isCollapsed`, newState.toString());
+      
+      // Also clear any individual item collapse states to ensure proper inheritance
+      if (projectId) {
+        // Reset localStorage for all items when toggling global collapse
+        const itemPrefix = `project_${projectId}_item_`;
+        
+        // Find and update all item-specific collapse states
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith(itemPrefix) && key.endsWith('_collapsed')) {
+            localStorage.setItem(key, newState.toString());
+          }
+        }
+      }
+      
+      return newState;
+    });
+  }, [storageKeyPrefix, projectId]);
 
   // Add a function to update hasChildren
-  const updateHasChildren = (value: boolean) => setHasChildren(value);
+  const updateHasChildren = useCallback((value: boolean) => setHasChildren(value), []);
+  
+  // Save states to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem(`${storageKeyPrefix}focusMode`, focusMode.toString());
+  }, [focusMode, storageKeyPrefix]);
+  
+  useEffect(() => {
+    localStorage.setItem(`${storageKeyPrefix}isCollapsed`, isCollapsed.toString());
+  }, [isCollapsed, storageKeyPrefix]);
 
   return (
-    <ProjectControlsContext.Provider
-      value={{
-        focusMode,
-        toggleFocusMode,
-        setFocusMode,
-        isCollapsed,
-        toggleCollapsed,
-        setIsCollapsed,
-        hasChildren,
-        updateHasChildren
-      }}
-    >
-      {children}
-    </ProjectControlsContext.Provider>
+    <AltKeyContext.Provider value={isAltPressed}>
+      <ProjectControlsContext.Provider
+        value={{
+          focusMode,
+          toggleFocusMode,
+          setFocusMode,
+          isCollapsed,
+          toggleCollapsed,
+          setIsCollapsed,
+          hasChildren,
+          updateHasChildren
+        }}
+      >
+        {children}
+      </ProjectControlsContext.Provider>
+    </AltKeyContext.Provider>
   );
 }
 
@@ -108,6 +187,36 @@ export function ProjectControlsProvider({ children }: { children: React.ReactNod
 export function useProjectControls() {
   return useContext(ProjectControlsContext);
 }
+
+// New hook for Alt key state
+export function useAltKey() {
+  return useContext(AltKeyContext);
+}
+
+// Helper to generate unique storage keys for each item
+const getItemCollapseKey = (projectId: string, itemId: string) => {
+  return `project_${projectId}_item_${itemId}_collapsed`;
+};
+
+// Initialize child items to start collapsed by default
+const getChildInitialCollapsed = (projectId: string, itemId: string) => {
+  const savedState = localStorage.getItem(getItemCollapseKey(projectId, itemId));
+  // If no saved state, default to collapsed (true)
+  return savedState !== 'false'; 
+};
+
+// Add this at the top level, outside of any components
+export const DragContext = createContext<{
+  activeId: string | null;
+  setActiveId: (id: string | null) => void;
+  projectId: string | null;
+  allItems: Item[];
+}>({
+  activeId: null,
+  setActiveId: () => {},
+  projectId: null,
+  allItems: [],
+});
 
 export default function ItemList({
   items,
@@ -117,6 +226,7 @@ export default function ItemList({
 }: ItemListProps) {
   const queryClient = useQueryClient();
   const list = items.filter(i => i.parent_id === parentId);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   // Get global controls from context
   const { focusMode, isCollapsed, updateHasChildren } = useProjectControls();
@@ -124,8 +234,10 @@ export default function ItemList({
   // Local collapse state based on parent's state or global state
   const [localCollapsed, setLocalCollapsed] = useState(false);
 
-  // Determine effective collapse state
-  const effectiveCollapsed = parentId === null ? isCollapsed : (parentCollapsed || localCollapsed);
+  // Determine effective collapse state - only used for initially hiding/showing children
+  // When a parent is collapsed by global state, we want to respect that
+  // But once a user interacts, the local state takes precedence
+  const effectiveCollapsed = parentId === null ? isCollapsed : parentCollapsed;
 
   // Function to check if any item has children
   const hasChildren = list.some(item =>
@@ -138,6 +250,22 @@ export default function ItemList({
       updateHasChildren(hasChildren);
     }
   }, [parentId, hasChildren, updateHasChildren]);
+  
+  // Sync with global collapse state for root-level items
+  useEffect(() => {
+    if (parentId === null) {
+      // Only apply global collapse state to root level
+      setLocalCollapsed(isCollapsed);
+      
+      // Update localStorage for all items (both collapsed and expanded states)
+      list.forEach(item => {
+        localStorage.setItem(
+          getItemCollapseKey(projectId, item.id), 
+          isCollapsed.toString()
+        );
+      });
+    }
+  }, [isCollapsed, parentId, list, projectId]);
 
   // Configure drag and drop sensors
   const sensors = useSensors(
@@ -151,18 +279,110 @@ export default function ItemList({
     })
   );
 
-  // Handle drag end event to update item positions
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
+  // Create a sorted list by position
+  const sortedList = [...list].sort((a, b) => (a.position || 0) - (b.position || 0));
+  
+  // Handle drag start event
+  function handleDragStart(event: DragStartEvent) {
+    const { active } = event;
+    setActiveId(active.id as string);
+  }
 
-    if (over && active.id !== over.id) {
-      // Find the indices of the items being dragged
-      const oldIndex = list.findIndex(item => item.id === active.id);
-      const newIndex = list.findIndex(item => item.id === over.id);
+  // Handle drag over event for parent switching
+  function handleDragOver(event: DragOverEvent) {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) return;
+
+    const activeItem = items.find(item => item.id === active.id);
+    const overItem = items.find(item => item.id === over.id);
+
+    if (!activeItem || !overItem) return;
+
+    // Don't allow dropping an item into its own descendants (would create a cycle)
+    // Need to get all descendant IDs to prevent circular references
+    const descendantIds: string[] = [];
+    // Find all descendants of the active item to prevent circular references
+    function getItemDescendants(itemId: string): void {
+      const directChildren = items.filter(i => i.parent_id === itemId);
+      for (const child of directChildren) {
+        descendantIds.push(child.id);
+        getItemDescendants(child.id);
+      }
+    }
+    getItemDescendants(activeItem.id);
+    
+    if (descendantIds.includes(overItem.id)) return;
+  }
+
+  // Handle drag end event
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over || active.id === over.id) return;
+
+    const activeItem = items.find(item => item.id === active.id);
+    const overItem = items.find(item => item.id === over.id);
+
+    if (!activeItem || !overItem) return;
+
+    // Check if we need to make the item a child of the target item
+    // This is decided based on:
+    // 1. Mouse position - if it's close to the indent area
+    // 2. The target item having children (or allowing children)
+    // 3. Not creating circular references
+    const isShiftKeyPressed = event.activatorEvent instanceof KeyboardEvent && event.activatorEvent.shiftKey;
+    const hasOverItemChildren = items.some(i => i.parent_id === overItem.id);
+    
+    // Make active item a child of over item when Shift is pressed, or over item already has children
+    const makeChild = isShiftKeyPressed && hasOverItemChildren;
+    
+    if (makeChild) {
+      // Target parent will be the over item
+      const newParentId = overItem.id;
+      
+      // Get next position for child item 
+      const childItems = items.filter(i => i.parent_id === newParentId);
+      const newPosition = (childItems.length ?? 0) + 1;
+      
+      try {
+        // Update the parent_id and position
+        await supabase
+          .from("items")
+          .update({ 
+            parent_id: newParentId,
+            position: newPosition
+          })
+          .eq("id", activeItem.id);
+          
+        // Update project timestamp so it appears at the top of the dashboard
+        await updateProjectTimestamp(projectId);
+        
+        // Refresh data after all updates
+        queryClient.invalidateQueries({ queryKey: ["items", projectId] });
+        toast({ title: "Item added as child" });
+        return;
+      } catch (error) {
+        console.error("Error adding item as child:", error);
+        toast({
+          title: "Failed to add as child",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+    
+    // Check if we're moving within the same parent or to a different parent
+    if (activeItem.parent_id === overItem.parent_id) {
+      // Same parent case - just reorder
+      const sameParentItems = items.filter(item => item.parent_id === activeItem.parent_id);
+      const oldIndex = sameParentItems.findIndex(item => item.id === active.id);
+      const newIndex = sameParentItems.findIndex(item => item.id === over.id);
 
       if (oldIndex !== -1 && newIndex !== -1) {
         // Create a map of items to their new positions
-        const newList = arrayMove([...list], oldIndex, newIndex);
+        const newList = arrayMove([...sameParentItems], oldIndex, newIndex);
         const positionUpdates = newList.map((item, index) => ({
           id: item.id,
           position: index + 1, // Positions start at 1
@@ -192,49 +412,126 @@ export default function ItemList({
           });
         }
       }
+    } else {
+      // Different parent case - change parent and reorder
+      const newParentId = overItem.parent_id;
+      const sourceParentItems = items.filter(item => item.parent_id === activeItem.parent_id && item.id !== activeItem.id);
+      const targetParentItems = items.filter(item => item.parent_id === newParentId);
+      
+      // Find the position in the new parent's list
+      const overIndex = targetParentItems.findIndex(item => item.id === over.id);
+      
+      try {
+        // 1. Update the dragged item's parent_id and position
+        await supabase
+          .from("items")
+          .update({ 
+            parent_id: newParentId,
+            position: overIndex + 1.5 // Put it between items initially
+          })
+          .eq("id", activeItem.id);
+        
+        // 2. Update positions for all items in the new parent
+        const newTargetItems = [
+          ...targetParentItems.slice(0, overIndex + 1),
+          { ...activeItem, parent_id: newParentId },
+          ...targetParentItems.slice(overIndex + 1)
+        ];
+        
+        const positionUpdates = newTargetItems.map((item, index) => ({
+          id: item.id,
+          position: index + 1,
+        }));
+        
+        for (const update of positionUpdates) {
+          await supabase
+            .from("items")
+            .update({ position: update.position })
+            .eq("id", update.id);
+        }
+        
+        // 3. Update positions for all items in the old parent
+        const sourcePositionUpdates = sourceParentItems.map((item, index) => ({
+          id: item.id,
+          position: index + 1,
+        }));
+        
+        for (const update of sourcePositionUpdates) {
+          await supabase
+            .from("items")
+            .update({ position: update.position })
+            .eq("id", update.id);
+        }
+        
+        // Update project timestamp so it appears at the top of the dashboard
+        await updateProjectTimestamp(projectId);
+        
+        // Refresh data after all updates
+        queryClient.invalidateQueries({ queryKey: ["items", projectId] });
+        toast({ title: "Item moved successfully" });
+      } catch (error) {
+        console.error("Error moving item:", error);
+        toast({
+          title: "Failed to move item",
+          variant: "destructive"
+        });
+      }
     }
-  };
-
-  // Create a sorted list by position
-  const sortedList = [...list].sort((a, b) => (a.position || 0) - (b.position || 0));
-
-  return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragEnd={handleDragEnd}
-    >
-      <SortableContext
-        items={sortedList.map(item => item.id)}
-        strategy={verticalListSortingStrategy}
-      >
-        <ul className="space-y-3">
-          {sortedList.map(item => (
-            <SortableItemRow
-              key={item.id}
-              id={item.id}
-              item={item}
-              projectId={projectId}
-              allItems={items}
-              parentCollapsed={effectiveCollapsed}
-            />
-          ))}
-        </ul>
-      </SortableContext>
-    </DndContext>
-  );
-}
-
-// Helper function to extract hostname
-function getHostname(url: string): string {
-  try {
-    const parsedUrl = new URL(url);
-    // Remove www. if it exists
-    return parsedUrl.hostname.replace(/^www\./, '');
-  } catch (e) {
-    // If URL parsing fails, return a generic label or part of the URL
-    return url.length > 30 ? url.substring(0, 27) + '...' : url;
   }
+
+  // Only render the DndContext once at the root level
+  if (parentId === null) {
+    return (
+      <DragContext.Provider value={{ activeId, setActiveId, projectId, allItems: items }}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={sortedList.map(item => item.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <ul className="space-y-3">
+              {sortedList.map(item => (
+                <SortableItemRow
+                  key={item.id}
+                  id={item.id}
+                  item={item}
+                  projectId={projectId}
+                  allItems={items}
+                  parentCollapsed={isCollapsed} // Pass the global collapse state directly
+                />
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
+      </DragContext.Provider>
+    );
+  }
+
+  // For child lists, just render the items without another DndContext
+  return (
+    <SortableContext
+      items={sortedList.map(item => item.id)}
+      strategy={verticalListSortingStrategy}
+    >
+      <ul className="space-y-3">
+        {sortedList.map(item => (
+          <SortableItemRow
+            key={item.id}
+            id={item.id}
+            item={item}
+            projectId={projectId}
+            allItems={items}
+            parentCollapsed={effectiveCollapsed}
+          />
+        ))}
+      </ul>
+    </SortableContext>
+  );
 }
 
 // Wrap ItemRow with dnd-kit sortable functionality
@@ -254,6 +551,12 @@ function SortableItemRow({ id, item, projectId, allItems, parentCollapsed }: {
     isDragging,
   } = useSortable({ id });
 
+  const { activeId } = useContext(DragContext);
+  const isActive = activeId === id;
+  
+  // Check if this item has children
+  const hasChildren = allItems.some(i => i.parent_id === item.id);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -262,7 +565,9 @@ function SortableItemRow({ id, item, projectId, allItems, parentCollapsed }: {
   };
 
   return (
-    <li className="border-b pb-2 last:border-b-0">
+    <li 
+      className={`border-b pb-2 last:border-b-0 ${isActive ? 'opacity-50' : ''} relative`}
+    >
       <div
         ref={setNodeRef}
         style={style}
@@ -272,6 +577,7 @@ function SortableItemRow({ id, item, projectId, allItems, parentCollapsed }: {
           {...attributes}
           {...listeners}
           className="cursor-grab mt-2 text-muted-foreground hover:text-foreground flex items-center h-6 w-6 justify-center"
+          title="Drag to reorder. Drag onto an item with children to nest, or hold Shift while dragging to make it a child of another item."
         >
           <GripVertical className="h-4 w-4" />
         </div>
@@ -284,6 +590,14 @@ function SortableItemRow({ id, item, projectId, allItems, parentCollapsed }: {
           />
         </div>
       </div>
+      
+      {/* Add visual indicator to show that an item can be a drop target for children */}
+      {hasChildren && (
+        <div 
+          className={`absolute top-0 left-0 w-full h-full pointer-events-none
+            ${activeId && activeId !== id ? 'border-2 border-dashed border-transparent hover:border-primary-300 rounded-lg' : ''}`}
+        />
+      )}
     </li>
   );
 }
@@ -301,6 +615,12 @@ function ItemRow({
 }) {
   // Get focus mode from the project controls context
   const { focusMode } = useProjectControls();
+  
+  // Use the global Alt key state instead of tracking it per item
+  const isAltPressed = useAltKey();
+  
+  // Keep tracking hover state at the item level
+  const [isHovered, setIsHovered] = useState(false);
 
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
@@ -311,23 +631,44 @@ function ItemRow({
   const [addingChild, setAddingChild] = useState(false);
   const [childContent, setChildContent] = useState("");
   const [childChecklist, setChildChecklist] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  
+  // Initialize isCollapsed from localStorage or parent state
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    // When parentCollapsed is true, we force this item to be collapsed
+    if (parentCollapsed) return true;
+    
+    // Otherwise, check localStorage for saved state
+    return getChildInitialCollapsed(projectId, item.id);
+  });
+  
+  // Save collapse state to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem(getItemCollapseKey(projectId, item.id), isCollapsed.toString());
+  }, [isCollapsed, projectId, item.id]);
 
   // State for confirmation dialog
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
   const [previewImageId, setPreviewImageId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const childInputRef = useRef<HTMLInputElement>(null); // Add this reference for the child input
 
   // Check if this item has children
   const hasChildren = allItems.some(i => i.parent_id === item.id);
 
-  // Effect to sync with parent collapse state
+  // Effect to sync with parent collapse state changes
   useEffect(() => {
-    if (parentCollapsed !== undefined) {
-      setIsCollapsed(parentCollapsed);
+    // Explicitly check for both true and false cases to ensure bidirectional sync
+    if (parentCollapsed === true) {
+      setIsCollapsed(true);
+    } else if (parentCollapsed === false) {
+      setIsCollapsed(false);
     }
   }, [parentCollapsed]);
+  
+  // Function to toggle collapse state
+  const toggleCollapse = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event bubbling
+    setIsCollapsed(prevState => !prevState);
+  }, []);
 
   useEffect(() => {
     // Adjust height based on content whenever editing
@@ -344,16 +685,6 @@ function ItemRow({
     // Update previous editing state ref for the next render
     prevEditing.current = editing;
   }, [editing, content]); // Keep content dependency for height adjustment
-
-  // Add effect to focus on child input when addingChild state changes
-  useEffect(() => {
-    if (addingChild && childInputRef.current) {
-      // Use setTimeout to ensure DOM has updated before focusing
-      setTimeout(() => {
-        childInputRef.current?.focus();
-      }, 0);
-    }
-  }, [addingChild]);
 
   // Mutation for updating item content specifically
   const updateContentMutation = useMutation({
@@ -686,11 +1017,15 @@ function ItemRow({
   }
 
   return (
-    <div className="flex flex-col w-full">
+    <div 
+      className="flex flex-col w-full"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <div className="flex gap-2 items-start w-full">
         {hasChildren && (
           <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={toggleCollapse}
             className="mt-1 text-gray-500 hover:text-gray-700 focus:outline-none"
             aria-label={isCollapsed ? "Expand item" : "Collapse item"}
           >
@@ -755,36 +1090,38 @@ function ItemRow({
                 </div>
               </div>
             ) : (
-              <span
-                className={`${(item.is_completed && item.is_checklist) ? "line-through text-muted-foreground" : ""} cursor-pointer flex-grow whitespace-pre-wrap pt-1 min-w-0 pr-6`}
-                onClick={() => setEditing(true)}
-              >
-                {item.content}
-              </span>
-            )}
-
-            {/* Add floating "+" button for all items */}
-            {!editing && !isCollapsed && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-0 top-0 h-4 w-4 p-0 rounded-full hover:bg-primary/10"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setAddingChild(!addingChild);
-                  if (addingChild) {
-                    setChildContent("");
-                  }
-                }}
-                title="Add sub-item"
-              >
-                <Plus className="h-2.5 w-2.5 text-primary" />
-              </Button>
+              <div className="relative">
+                <span
+                  className={`${(item.is_completed && item.is_checklist) ? "line-through text-muted-foreground" : ""} cursor-pointer flex-grow whitespace-pre-wrap pt-1 min-w-0 pr-6 hover:bg-muted/20 rounded ${focusMode ? "hover:after:content-['Alt+Hover_to_show_options'] hover:after:absolute hover:after:right-2 hover:after:top-1 hover:after:text-xs hover:after:opacity-50" : ""}`}
+                  onClick={() => setEditing(true)}
+                >
+                  {item.content}
+                </span>
+                
+                {/* Add floating "+" button for all items */}
+                {!editing && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-5 w-5 p-0 rounded-full bg-primary/10 hover:bg-primary/20"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAddingChild(!addingChild);
+                      if (addingChild) {
+                        setChildContent("");
+                      }
+                    }}
+                    title="Add sub-item"
+                  >
+                    <Plus className="h-3 w-3 text-primary" />
+                  </Button>
+                )}
+              </div>
             )}
           </div>
 
-          {/* Only show attachments when not collapsed and not in focus mode */}
-          {!editing && !isCollapsed && !focusMode && item.item_attachments && item.item_attachments.length > 0 && (
+          {/* Only show attachments when not in focus mode and this item itself is not collapsed */}
+          {!editing && !focusMode && item.item_attachments && item.item_attachments.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
               {item.item_attachments.map(att => (
                 <div key={att.id}>
@@ -824,8 +1161,8 @@ function ItemRow({
             </div>
           )}
 
-          {/* Action buttons only shown when not collapsed and not in focus mode */}
-          {!editing && !isCollapsed && !focusMode && (
+          {/* Action buttons shown when not in focus mode OR when Alt is pressed AND this specific item is hovered */}
+          {(!focusMode || (focusMode && isAltPressed && isHovered)) && !editing && (
             <div className="flex flex-wrap items-center gap-2 mt-2">
               <input
                 type="file"
@@ -923,8 +1260,8 @@ function ItemRow({
             </div>
           )}
 
-          {/* Show child form when not collapsed (works in both normal and focus mode) */}
-          {!isCollapsed && addingChild && (
+          {/* Show child form */}
+          {addingChild && (
             <form
               onSubmit={e => {
                 e.preventDefault();
@@ -932,20 +1269,20 @@ function ItemRow({
               }}
               className="flex gap-2 items-center pl-3 ml-0 mt-2 border-l-2 border-blue-200"
             >
-              <Input
-                ref={childInputRef}
-                className="border rounded px-2 py-1 text-sm flex-grow"
+              <Textarea
+                className="min-h-[40px] p-2 resize-none overflow-hidden"
                 placeholder="New Task (or '- ' for Note)..."
                 value={childContent}
+                autoFocus
                 onChange={e => setChildContent(e.target.value)}
                 onKeyDown={e => {
+                  // Only submit with Ctrl+Enter, normal Enter adds a new line
                   if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
                     e.preventDefault();
                     if (childContent.trim()) {
                       addChild();
                     }
-                  }
-                  if (e.key === "Escape") {
+                  } else if (e.key === "Escape") {
                     setAddingChild(false);
                     setChildContent("");
                   }
@@ -977,16 +1314,29 @@ function ItemRow({
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Show nested items only when this item is not collapsed */}
       {!isCollapsed && hasChildren && (
         <div className="mt-3 pl-3 border-l-2 border-blue-200">
           <ItemList
             items={allItems}
             projectId={projectId}
             parentId={item.id}
-            parentCollapsed={parentCollapsed}
+            parentCollapsed={false}
           />
         </div>
       )}
     </div>
   );
+}
+
+// Helper function to extract hostname
+function getHostname(url: string): string {
+  try {
+    const parsedUrl = new URL(url);
+    // Remove www. if it exists
+    return parsedUrl.hostname.replace(/^www\./, '');
+  } catch (e) {
+    // If URL parsing fails, return a generic label or part of the URL
+    return url.length > 30 ? url.substring(0, 27) + '...' : url;
+  }
 }

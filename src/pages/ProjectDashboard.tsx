@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectCard } from "@/components/ProjectCard";
@@ -20,7 +20,17 @@ export default function ProjectDashboard() {
 
   const [isCreating, setIsCreating] = useState(false);
   const [newProject, setNewProject] = useState({ title: "", description: "" });
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  
+  // Initialize view mode from localStorage or default to grid
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const savedViewMode = localStorage.getItem('dashboardViewMode');
+    return (savedViewMode === 'list' || savedViewMode === 'grid') ? savedViewMode : 'grid';
+  });
+
+  // Save view mode to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('dashboardViewMode', viewMode);
+  }, [viewMode]);
 
   const { data: projects, isLoading, refetch } = useQuery({
     queryKey: ["projects"],

@@ -105,9 +105,31 @@ export default function ProjectPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Add state for sorting and filtering
-  const [sortOption, setSortOption] = useState<SortOption>('newest');
-  const [filterOption, setFilterOption] = useState<FilterOption>('all');
+  // Add state for sorting and filtering with localStorage persistence
+  const [sortOption, setSortOption] = useState<SortOption>(() => {
+    const savedSort = localStorage.getItem(`project_${projectId}_sortOption`);
+    return (savedSort === 'newest' || savedSort === 'oldest') ? savedSort as SortOption : 'newest';
+  });
+
+  const [filterOption, setFilterOption] = useState<FilterOption>(() => {
+    const savedFilter = localStorage.getItem(`project_${projectId}_filterOption`);
+    return (savedFilter === 'all' || savedFilter === 'notes' || savedFilter === 'tasks') 
+      ? savedFilter as FilterOption 
+      : 'all';
+  });
+
+  // Save preferences to localStorage
+  useEffect(() => {
+    if (projectId) {
+      localStorage.setItem(`project_${projectId}_sortOption`, sortOption);
+    }
+  }, [projectId, sortOption]);
+
+  useEffect(() => {
+    if (projectId) {
+      localStorage.setItem(`project_${projectId}_filterOption`, filterOption);
+    }
+  }, [projectId, filterOption]);
 
   // Add state for the add item dialog
   const [addItemDialogOpen, setAddItemDialogOpen] = useState(false);
@@ -261,7 +283,7 @@ export default function ProjectPage() {
   }
 
   return (
-    <ProjectControlsProvider>
+    <ProjectControlsProvider projectId={projectId as string}>
       <div className="flex flex-col">
         {/* Secondary navbar with solid bg and no gap */}
         <ProjectNavbar />
@@ -469,6 +491,7 @@ function AddItemForm({ onAdd }: { onAdd: (params: { content: string }) => void }
         value={content}
         onChange={e => setContent(e.target.value)}
         onKeyDown={e => {
+          // Only submit with Ctrl+Enter, normal Enter adds a new line
           if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
             const trimmedContent = content.trim();
