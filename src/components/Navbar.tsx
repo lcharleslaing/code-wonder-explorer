@@ -57,9 +57,6 @@ export function Navbar({ onOpenSideDrawer }: NavbarProps) {
           <Link to="/" className="text-sm font-medium hover:text-primary transition-colors">
             Dashboard
           </Link>
-          <Link to="/projects" className="text-sm font-medium hover:text-primary transition-colors">
-            Projects
-          </Link>
           <Link to="/settings" className="text-sm font-medium hover:text-primary transition-colors">
             Settings
           </Link>

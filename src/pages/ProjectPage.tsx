@@ -53,7 +53,7 @@ function ProjectNavbar() {
           onClick={() => navigate("/")}
           className="px-2"
         >
-          ← Back to Projects
+          ← Back to Dashboard
         </Button>
 
         <div className="flex gap-2">

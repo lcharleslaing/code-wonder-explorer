@@ -96,29 +96,6 @@ export function SideDrawer({ isOpen, onClose }: SideDrawerProps) {
                 Dashboard
               </Link>
               <Link
-                to="/projects"
-                className="flex items-center py-2 text-sm font-medium hover:text-primary transition-colors"
-                onClick={onClose}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="mr-2"
-                >
-                  <path d="M3 3v18h18" />
-                  <path d="M18.4 9.4 8.5 19.2" />
-                  <path d="m10.8 7.8 7.9-7.9 6.4 6.4-7.9 7.9" />
-                </svg>
-                Projects
-              </Link>
-              <Link
                 to="/settings"
                 className="flex items-center py-2 text-sm font-medium hover:text-primary transition-colors"
                 onClick={onClose}

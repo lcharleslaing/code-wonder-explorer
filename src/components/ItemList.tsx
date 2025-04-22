@@ -227,6 +227,10 @@ export default function ItemList({
   const queryClient = useQueryClient();
   const list = items.filter(i => i.parent_id === parentId);
   const [activeId, setActiveId] = useState<string | null>(null);
+  
+  // Add state for adding root items when in focus mode
+  const [addingRootItem, setAddingRootItem] = useState(false);
+  const [rootItemContent, setRootItemContent] = useState("");
 
   // Get global controls from context
   const { focusMode, isCollapsed, updateHasChildren } = useProjectControls();
@@ -244,13 +248,87 @@ export default function ItemList({
     items.some(i => i.parent_id === item.id)
   );
 
+  // Function to add root item
+  async function addRootItem() {
+    const trimmedContent = rootItemContent.trim();
+    if (!trimmedContent) return;
+
+    let finalContent = trimmedContent;
+    let isChecklist = true;
+
+    // Check for note prefix
+    if (finalContent.startsWith('-')) {
+      isChecklist = false;
+      finalContent = finalContent.substring(1).trimStart();
+    }
+
+    try {
+      // Insert the new root item
+      const { data: newItemData, error: itemError } = await supabase
+        .from("items")
+        .insert([
+          {
+            content: finalContent,
+            project_id: projectId,
+            is_checklist: isChecklist,
+            parent_id: null,
+            position: (items.filter(i => i.parent_id === null).length ?? 0) + 1,
+          },
+        ])
+        .select()
+        .single();
+
+      if (itemError || !newItemData) {
+        toast({
+          title: "Error Creating Item",
+          description: itemError?.message || "Failed to create item",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Check for URLs in content and create attachment if found
+      const URL_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/;
+      const urlMatch = trimmedContent.match(URL_REGEX);
+      
+      if (urlMatch) {
+        const detectedUrl = urlMatch[0];
+        await supabase
+          .from("item_attachments")
+          .insert({
+            item_id: newItemData.id,
+            attachment_type: 'url',
+            url: detectedUrl,
+          });
+      }
+
+      // Update project timestamp
+      await updateProjectTimestamp(projectId);
+      
+      // Refresh data
+      queryClient.invalidateQueries({ queryKey: ["items", projectId] });
+      
+      // Reset the form
+      setRootItemContent("");
+      setAddingRootItem(false);
+      
+      toast({ title: "Item added successfully" });
+    } catch (error) {
+      console.error("Error adding root item:", error);
+      toast({
+        title: "Error adding item",
+        variant: "destructive"
+      });
+    }
+  }
+
   // Update parent context with children info if this is the root level
   useEffect(() => {
     if (parentId === null) {
       updateHasChildren(hasChildren);
     }
   }, [parentId, hasChildren, updateHasChildren]);
-  
+
   // Sync with global collapse state for root-level items
   useEffect(() => {
     if (parentId === null) {
@@ -483,6 +561,64 @@ export default function ItemList({
   if (parentId === null) {
     return (
       <DragContext.Provider value={{ activeId, setActiveId, projectId, allItems: items }}>
+        {/* Add root item form in focus mode */}
+        {focusMode && (
+          <div className="mb-4">
+            {addingRootItem ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  addRootItem();
+                }}
+                className="flex flex-col sm:flex-row gap-2 items-start sm:items-center w-full"
+              >
+                <Textarea
+                  className="flex-grow min-h-[40px] resize-none overflow-hidden"
+                  placeholder="New Task (or '- ' for Note)..."
+                  value={rootItemContent}
+                  autoFocus
+                  onChange={(e) => setRootItemContent(e.target.value)}
+                  onKeyDown={(e) => {
+                    // Only submit with Ctrl+Enter, normal Enter adds a new line
+                    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                      e.preventDefault();
+                      if (rootItemContent.trim()) {
+                        addRootItem();
+                      }
+                    } else if (e.key === "Escape") {
+                      setAddingRootItem(false);
+                      setRootItemContent("");
+                    }
+                  }}
+                  onBlur={() => {
+                    if (!rootItemContent.trim()) {
+                      setAddingRootItem(false);
+                    }
+                  }}
+                />
+                <Button type="submit">Add</Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setAddingRootItem(false);
+                    setRootItemContent("");
+                  }}
+                >
+                  Cancel
+                </Button>
+              </form>
+            ) : (
+              <Button
+                onClick={() => setAddingRootItem(true)}
+                className="mb-2"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add New Item
+              </Button>
+            )}
+          </div>
+        )}
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -936,12 +1072,83 @@ function ItemRow({
   }
 
   async function deleteItem() {
-    const { error } = await supabase.from("items").delete().eq("id", item.id);
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      await updateProjectTimestamp(projectId);
-      queryClient.invalidateQueries({ queryKey: ["items", projectId] });
+    try {
+      // First get all descendant IDs to delete their attachments too
+      const descendantIds = getAllDescendantIds(item.id, allItems);
+      const allIdsToDelete = [item.id, ...descendantIds];
+      
+      // 1. Delete all attachments for this item and its descendants
+      const { error: attachmentError } = await supabase
+        .from("item_attachments")
+        .delete()
+        .in("item_id", allIdsToDelete);
+        
+      if (attachmentError) {
+        console.error("Error deleting attachments:", attachmentError);
+        toast({ 
+          title: "Warning", 
+          description: "Item deleted but some attachments may not have been removed.",
+          variant: "destructive" 
+        });
+      }
+      
+      // 2. For any image attachments, also delete the actual files from storage
+      // Get all image attachments first
+      const { data: imageAttachments } = await supabase
+        .from("item_attachments")
+        .select("url")
+        .in("item_id", allIdsToDelete)
+        .eq("attachment_type", "image");
+        
+      if (imageAttachments && imageAttachments.length > 0) {
+        // Extract file paths from URLs to delete from storage
+        const filePaths = imageAttachments
+          .map(att => {
+            try {
+              // Extract the path portion from the URL
+              // URLs should be in format like: https://[bucket].supabase.co/storage/v1/object/public/[path]
+              const url = new URL(att.url);
+              const pathMatch = url.pathname.match(/\/storage\/v1\/object\/public\/(.+)/);
+              return pathMatch ? pathMatch[1] : null;
+            } catch (e) {
+              console.error("Error parsing attachment URL:", e);
+              return null;
+            }
+          })
+          .filter(Boolean); // Remove any null entries
+          
+        // Delete files from storage if paths were extracted
+        if (filePaths.length > 0) {
+          const { error: storageError } = await supabase.storage
+            .from('attachments') // Replace with your actual bucket name if different
+            .remove(filePaths);
+            
+          if (storageError) {
+            console.error("Error deleting files from storage:", storageError);
+          }
+        }
+      }
+      
+      // 3. Finally delete the items (including descendants)
+      const { error } = await supabase
+        .from("items")
+        .delete()
+        .in("id", allIdsToDelete);
+        
+      if (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      } else {
+        await updateProjectTimestamp(projectId);
+        queryClient.invalidateQueries({ queryKey: ["items", projectId] });
+        toast({ title: "Item deleted", description: "Item and all its attachments have been removed." });
+      }
+    } catch (error) {
+      console.error("Error in delete process:", error);
+      toast({ 
+        title: "Error deleting item", 
+        description: "An unexpected error occurred", 
+        variant: "destructive" 
+      });
     }
   }
 
