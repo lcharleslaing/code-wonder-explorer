@@ -1,73 +1,160 @@
-# Welcome to your Lovable project
+# Produx - Project & Task Management App
 
-## Project info
+Produx is a modern, intuitive task management application for organizing projects, tasks, and notes with a clean hierarchical interface. It's designed to help users manage their projects with a flexible and powerful system for tracking tasks, notes, and attachments.
 
-**URL**: https://lovable.dev/projects/9b2bede9-4f13-4333-a521-7492e7c9ba05
+## 🌟 Features
 
-## How can I edit this code?
+### Project Management
+- Create and manage multiple projects
+- View project dashboards with task completion statistics
+- Organize tasks and notes hierarchically within projects
 
-There are several ways of editing your application.
+### Task & Note System
+- Create both checklist items (tasks) and notes
+- Nested hierarchy with parent-child relationships
+- Visual task organization with subtle blue indentation lines
+- Auto-complete parent tasks when all child tasks are completed
+- Mark tasks as complete/incomplete with confirmation for bulk actions
 
-**Use Lovable**
+### Rich Content Support
+- Attach images to tasks and notes
+- Automatically extract and link URLs found in task/note text
+- Preview attached images with expandable viewer
+- Responsive design that adapts to both desktop and mobile
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/9b2bede9-4f13-4333-a521-7492e7c9ba05) and start prompting.
+### User Experience
+- Clean, modern UI using shadcn/ui components
+- Responsive design with mobile-optimized view (icon-only buttons on small screens)
+- Efficient space use for deeply nested items
+- Authentication powered by Supabase
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🛠️ Technology Stack
 
-**Use your preferred IDE**
+### Frontend
+- **React**: UI library for building the user interface
+- **TypeScript**: For type safety across the application
+- **Vite**: Build tool for fast development and optimized production builds
+- **React Router**: For application routing
+- **TanStack Query (React Query)**: For data fetching and state management
+- **Tailwind CSS**: For styling and responsive design
+- **shadcn/ui**: Component library built on Radix UI
+- **Lucide React**: Modern icon set
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Backend & Data Storage
+- **Supabase**: Backend as a service platform providing:
+  - Authentication
+  - PostgreSQL database
+  - Storage for images and files
+  - Realtime capabilities
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Database Schema
+- **Projects**: Store project metadata (title, description, user)
+- **Items**: Individual tasks and notes, with hierarchical relationships
+- **Item Attachments**: Store links to images and URLs attached to items
 
-Follow these steps:
+## 🚀 Getting Started
 
+### Prerequisites
+- Node.js (14.x or later)
+- pnpm (preferred) or npm
+
+### Installation
+
+1. Clone the repository:
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+git clone https://github.com/yourusername/produx.git
+cd produx
 ```
 
-**Edit a file directly in GitHub**
+2. Install dependencies:
+```sh
+pnpm install
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+3. Set up environment variables:
+Create a `.env` file in the root directory with the following variables:
+```
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-**Use GitHub Codespaces**
+4. Start the development server:
+```sh
+pnpm dev
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 🔧 Project Structure
 
-## What technologies are used for this project?
+```
+produx/
+├── public/              # Static assets
+├── src/
+│   ├── components/      # React components
+│   │   ├── ui/          # shadcn/ui components
+│   │   └── ...          # Application-specific components
+│   ├── hooks/           # Custom React hooks
+│   ├── integrations/    # External service integrations (Supabase)
+│   ├── lib/             # Utility functions
+│   ├── pages/           # Page components
+│   └── types/           # TypeScript type definitions
+├── .env                 # Environment variables
+└── ...                  # Configuration files
+```
 
-This project is built with:
+## 📱 Mobile Optimization
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+The app is optimized for mobile use with:
+- Responsive layouts that adapt to screen size
+- Compact UI elements on small screens
+- Space-efficient indentation for nested items
+- Touch-friendly UI elements
+- Icon-only buttons on small screens to save space
 
-## How can I deploy this project?
+## 🔄 Development Workflow
 
-Simply open [Lovable](https://lovable.dev/projects/9b2bede9-4f13-4333-a521-7492e7c9ba05) and click on Share -> Publish.
+1. Create feature branches from `main`
+2. Make changes and test locally
+3. Push changes and create a pull request
+4. Once approved, merge the feature branch into `main`
 
-## Can I connect a custom domain to my Lovable project?
+## 🔐 Authentication
 
-Yes, you can!
+Authentication is handled through Supabase, providing:
+- Email/password authentication
+- Session management
+- Protected routes
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 🗄️ Database Schema
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+The application uses the following database tables:
+
+### Projects
+- `id`: UUID
+- `title`: String
+- `description`: String (optional)
+- `user_id`: UUID
+- `created_at`: Timestamp
+- `updated_at`: Timestamp
+
+### Items
+- `id`: UUID
+- `project_id`: UUID (foreign key to Projects)
+- `parent_id`: UUID (self-reference for hierarchy, nullable)
+- `content`: String
+- `is_checklist`: Boolean
+- `is_completed`: Boolean
+- `position`: Integer (for ordering)
+- `created_at`: Timestamp
+- `updated_at`: Timestamp
+
+### Item Attachments
+- `id`: UUID
+- `item_id`: UUID (foreign key to Items)
+- `attachment_type`: String (e.g., 'image', 'url')
+- `url`: String
+- `label`: String (optional)
+- `created_at`: Timestamp
+
+## 🙏 Acknowledgements
+
+This project uses various open-source libraries and tools, including React, TypeScript, Tailwind CSS, shadcn/ui, Supabase, and more.
