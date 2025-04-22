@@ -716,12 +716,52 @@ function ItemRow({
         )}
         <div className="flex-grow flex flex-col gap-1 min-w-0 relative">
           <div className="relative">
-            <span
-              className={`${(item.is_completed && item.is_checklist) ? "line-through text-muted-foreground" : ""} cursor-pointer flex-grow whitespace-pre-wrap pt-1 min-w-0 pr-6`}
-              onClick={() => setEditing(true)}
-            >
-              {item.content}
-            </span>
+            {editing ? (
+              <div className="relative">
+                <Textarea
+                  ref={editTextAreaRef}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  className="min-h-[40px] p-2 resize-none overflow-hidden"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                      e.preventDefault();
+                      if (content.trim()) {
+                        updateContentMutation.mutate(content);
+                      }
+                    } else if (e.key === "Escape") {
+                      cancelEdit();
+                    }
+                  }}
+                  onBlur={() => {
+                    if (content.trim() !== item.content) {
+                      updateContentMutation.mutate(content);
+                    } else {
+                      setEditing(false);
+                    }
+                  }}
+                />
+                <div className="flex justify-end mt-2 gap-2">
+                  <Button size="sm" variant="outline" onClick={cancelEdit}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    onClick={() => updateContentMutation.mutate(content)}
+                    disabled={!content.trim() || updateContentMutation.isPending}
+                  >
+                    Save
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <span
+                className={`${(item.is_completed && item.is_checklist) ? "line-through text-muted-foreground" : ""} cursor-pointer flex-grow whitespace-pre-wrap pt-1 min-w-0 pr-6`}
+                onClick={() => setEditing(true)}
+              >
+                {item.content}
+              </span>
+            )}
 
             {/* Add floating "+" button for all items */}
             {!editing && !isCollapsed && (
