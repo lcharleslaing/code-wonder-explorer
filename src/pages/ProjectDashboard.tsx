@@ -10,6 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/use-toast";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { LayoutGrid, List } from "lucide-react";
+
+type ViewMode = 'grid' | 'list';
 
 export default function ProjectDashboard() {
   const navigate = useNavigate();
@@ -17,6 +20,7 @@ export default function ProjectDashboard() {
 
   const [isCreating, setIsCreating] = useState(false);
   const [newProject, setNewProject] = useState({ title: "", description: "" });
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
   const { data: projects, isLoading, refetch } = useQuery({
     queryKey: ["projects"],
@@ -112,44 +116,95 @@ export default function ProjectDashboard() {
     <div className="container mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Projects</h1>
-        <Dialog open={isCreating} onOpenChange={setIsCreating}>
-          <DialogTrigger asChild>
-            <Button>Create Project</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Project</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <Input
-                placeholder="Project title"
-                value={newProject.title}
-                onChange={(e) =>
-                  setNewProject((prev) => ({ ...prev, title: e.target.value }))
-                }
-              />
-              <Textarea
-                placeholder="Project description (optional)"
-                value={newProject.description}
-                onChange={(e) =>
-                  setNewProject((prev) => ({
-                    ...prev,
-                    description: e.target.value,
-                  }))
-                }
-              />
-              <Button onClick={handleCreateProject} disabled={!newProject.title}>
-                Create
+        <div className="flex items-center gap-4">
+          <div className="flex border rounded-md overflow-hidden">
+            <Button 
+              variant={viewMode === 'grid' ? "default" : "ghost"} 
+              size="sm"
+              onClick={() => setViewMode('grid')}
+              className="rounded-none px-3"
+            >
+              <LayoutGrid className="h-4 w-4 mr-1" />
+              Grid
+            </Button>
+            <Button 
+              variant={viewMode === 'list' ? "default" : "ghost"} 
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className="rounded-none px-3"
+            >
+              <List className="h-4 w-4 mr-1" />
+              List
+            </Button>
+          </div>
+          <Dialog open={isCreating} onOpenChange={setIsCreating}>
+            <DialogTrigger asChild>
+              <Button>Create Project</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Project</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <Input
+                  placeholder="Project title"
+                  value={newProject.title}
+                  onChange={(e) =>
+                    setNewProject((prev) => ({ ...prev, title: e.target.value }))
+                  }
+                />
+                <Textarea
+                  placeholder="Project description (optional)"
+                  value={newProject.description}
+                  onChange={(e) =>
+                    setNewProject((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                />
+                <Button onClick={handleCreateProject} disabled={!newProject.title}>
+                  Create
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+      
+      {viewMode === 'grid' ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {projects?.map((project) => (
+            <ProjectCard key={project.id} project={project} />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {projects?.map((project) => (
+            <div 
+              key={project.id} 
+              className="border rounded-md p-4 hover:border-primary cursor-pointer flex justify-between items-center"
+              onClick={() => navigate(`/projects/${project.id}`)}
+            >
+              <div>
+                <h3 className="font-semibold text-lg">{project.title}</h3>
+                {project.description && (
+                  <p className="text-muted-foreground text-sm mt-1">{project.description}</p>
+                )}
+                <div className="text-xs text-muted-foreground mt-2">
+                  {project.items ? `${project.items.length} items` : "No items"}
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/projects/${project.id}`);
+              }}>
+                Open
               </Button>
             </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {projects?.map((project) => (
-          <ProjectCard key={project.id} project={project} />
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
