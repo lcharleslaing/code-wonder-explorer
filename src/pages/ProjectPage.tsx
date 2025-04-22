@@ -26,6 +26,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { updateProjectTimestamp } from "@/utils/updateProjectTimestamp";
 
 // Add imports for the ProjectControls components
 import { ProjectControlsProvider, useProjectControls } from "@/components/ItemList";
@@ -174,11 +175,11 @@ export default function ProjectPage() {
     // Then sort the filtered items
     if (sortOption === 'newest') {
       return [...filteredItems].sort((a, b) => {
-        return new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime();
+        return new Date(b.updated_at || '').getTime() - new Date(a.updated_at || '').getTime();
       });
     } else if (sortOption === 'oldest') {
       return [...filteredItems].sort((a, b) => {
-        return new Date(a.created_at || '').getTime() - new Date(b.created_at || '').getTime();
+        return new Date(a.updated_at || '').getTime() - new Date(b.updated_at || '').getTime();
       });
     }
 
@@ -238,6 +239,10 @@ export default function ProjectPage() {
     }
 
     toast({ title: "Added!", description: "Item added." });
+    
+    // Update project timestamp to move it to the top of dashboard
+    await updateProjectTimestamp(projectId);
+    
     queryClient.invalidateQueries({ queryKey: ["items", projectId] });
   };
 
@@ -396,13 +401,13 @@ function ProjectContent({
                 <SelectItem value="newest">
                   <div className="flex items-center">
                     <SortDesc className="mr-2 h-4 w-4" />
-                    <span>Newest First</span>
+                    <span>Recently Updated</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="oldest">
                   <div className="flex items-center">
                     <SortAsc className="mr-2 h-4 w-4" />
-                    <span>Oldest First</span>
+                    <span>Oldest Updates</span>
                   </div>
                 </SelectItem>
               </SelectContent>

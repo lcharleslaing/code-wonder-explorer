@@ -42,6 +42,7 @@ import {
   verticalListSortingStrategy
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { updateProjectTimestamp } from "@/utils/updateProjectTimestamp";
 
 interface ItemListProps {
   items: Item[];
@@ -176,6 +177,9 @@ export default function ItemList({
               .update({ position: update.position })
               .eq("id", update.id);
           }
+
+          // Update project timestamp so it appears at the top of the dashboard
+          await updateProjectTimestamp(projectId);
 
           // Refresh data after all updates
           queryClient.invalidateQueries({ queryKey: ["items", projectId] });
@@ -360,6 +364,7 @@ function ItemRow({
         .update({ content: newContent })
         .eq("id", item.id);
       if (error) throw error;
+      await updateProjectTimestamp(projectId);
     },
     onSuccess: () => {
       setEditing(false);
@@ -379,6 +384,7 @@ function ItemRow({
         .update({ is_checklist: !item.is_checklist })
         .eq("id", item.id);
       if (error) throw error;
+      await updateProjectTimestamp(projectId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["items", projectId] });
@@ -407,6 +413,7 @@ function ItemRow({
           url: imageUrl
         });
       if (error) throw error;
+      await updateProjectTimestamp(projectId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["items", projectId] });
@@ -531,6 +538,7 @@ function ItemRow({
       if (error) {
         toast({ title: "Error", description: `Failed to bulk update: ${error.message}`, variant: "destructive" });
       } else {
+        await updateProjectTimestamp(projectId);
         queryClient.invalidateQueries({ queryKey: ["items", projectId] });
         // Check parent AFTER successful bulk update
         await checkAndCompleteParentIfNeeded(item.parent_id);
@@ -559,6 +567,7 @@ function ItemRow({
         if (error) {
           toast({ title: "Error", description: `Failed to uncheck item(s): ${error.message}`, variant: "destructive" });
         } else {
+          await updateProjectTimestamp(projectId);
           queryClient.invalidateQueries({ queryKey: ["items", projectId] });
           // No need to check parent completion when unchecking
         }
@@ -573,6 +582,7 @@ function ItemRow({
         if (updateError) {
           toast({ title: "Error", description: updateError.message, variant: "destructive" });
         } else {
+          await updateProjectTimestamp(projectId);
           queryClient.invalidateQueries({ queryKey: ["items", projectId] });
           // Check parent AFTER successful single item check
           await checkAndCompleteParentIfNeeded(item.parent_id);
@@ -598,8 +608,10 @@ function ItemRow({
     const { error } = await supabase.from("items").delete().eq("id", item.id);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      await updateProjectTimestamp(projectId);
+      queryClient.invalidateQueries({ queryKey: ["items", projectId] });
     }
-    queryClient.invalidateQueries({ queryKey: ["items", projectId] });
   }
 
   // Add child note/checklist item
@@ -662,6 +674,7 @@ function ItemRow({
     }
 
     // --- Step 3: Reset form and invalidate ---
+    await updateProjectTimestamp(projectId);
     queryClient.invalidateQueries({ queryKey: ["items", projectId] });
     setChildContent("");
     setAddingChild(false);

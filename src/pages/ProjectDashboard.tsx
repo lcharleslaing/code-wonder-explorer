@@ -27,7 +27,7 @@ export default function ProjectDashboard() {
       const { data: projectsData, error: projectsError } = await supabase
         .from("projects")
         .select("*")
-        .order("created_at", { ascending: false })
+        .order("updated_at", { ascending: false })
         .eq("user_id", user.id);
 
       if (projectsError) throw projectsError;
