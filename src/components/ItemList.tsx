@@ -344,7 +344,10 @@ function ItemRow({
   // Add effect to focus on child input when addingChild state changes
   useEffect(() => {
     if (addingChild && childInputRef.current) {
-      childInputRef.current.focus();
+      // Use setTimeout to ensure DOM has updated before focusing
+      setTimeout(() => {
+        childInputRef.current?.focus();
+      }, 0);
     }
   }, [addingChild]);
 
@@ -698,52 +701,34 @@ function ItemRow({
         ) : (
           <FileText className="text-blue-600 mt-1 flex-shrink-0" />
         )}
-        <div className="flex-grow flex flex-col gap-1 min-w-0">
-          {editing ? (
-            <div className="flex-grow flex flex-col gap-1">
-              <Textarea
-                ref={editTextAreaRef}
-                className="border rounded px-2 py-1 text-sm flex-grow resize-none overflow-hidden min-h-[40px]"
-                value={content}
-                onChange={e => setContent(e.target.value)}
-                onBlur={() => cancelEdit()}
-                onKeyDown={e => {
-                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-                    e.preventDefault();
-                    // Use the content update mutation
-                    updateContentMutation.mutate(content);
-                  }
-                  if (e.key === "Escape") {
-                    cancelEdit();
-                  }
-                }}
-              />
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => updateContentMutation.mutate(content)}
-                  disabled={updateContentMutation.isPending}
-                >
-                  Save (Ctrl+Enter)
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={cancelEdit}
-                >
-                  Cancel (Esc)
-                </Button>
-              </div>
-            </div>
-          ) : (
+        <div className="flex-grow flex flex-col gap-1 min-w-0 relative">
+          <div className="relative">
             <span
-              className={`${(item.is_completed && item.is_checklist) ? "line-through text-muted-foreground" : ""} cursor-pointer flex-grow whitespace-pre-wrap pt-1 min-w-0`}
+              className={`${(item.is_completed && item.is_checklist) ? "line-through text-muted-foreground" : ""} cursor-pointer flex-grow whitespace-pre-wrap pt-1 min-w-0 pr-6`}
               onClick={() => setEditing(true)}
             >
               {item.content}
             </span>
-          )}
+
+            {/* Add floating "+" button for all items */}
+            {!editing && !isCollapsed && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-0 h-4 w-4 p-0 rounded-full hover:bg-primary/10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setAddingChild(!addingChild);
+                  if (addingChild) {
+                    setChildContent("");
+                  }
+                }}
+                title="Add sub-item"
+              >
+                <Plus className="h-2.5 w-2.5 text-primary" />
+              </Button>
+            )}
+          </div>
 
           {/* Only show attachments when not collapsed and not in focus mode */}
           {!editing && !isCollapsed && !focusMode && item.item_attachments && item.item_attachments.length > 0 && (
@@ -870,12 +855,56 @@ function ItemRow({
                 variant="secondary"
                 size="sm"
                 className="h-8"
-                onClick={() => setAddingChild(!addingChild)}
+                onClick={() => {
+                  setAddingChild(!addingChild);
+                  // If opening, will be focused via useEffect
+                  // If closing, clear the content
+                  if (addingChild) {
+                    setChildContent("");
+                  }
+                }}
               >
                 <span className="mr-1 sm:mr-1">+</span>
                 <span className="hidden sm:inline">Add child</span>
               </Button>
             </div>
+          )}
+
+          {/* Show child form when not collapsed (works in both normal and focus mode) */}
+          {!isCollapsed && addingChild && (
+            <form
+              onSubmit={e => {
+                e.preventDefault();
+                addChild();
+              }}
+              className="flex gap-2 items-center pl-3 ml-0 mt-2 border-l-2 border-blue-200"
+            >
+              <Input
+                ref={childInputRef}
+                className="border rounded px-2 py-1 text-sm flex-grow"
+                placeholder="New Task (or '- ' for Note)..."
+                value={childContent}
+                onChange={e => setChildContent(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    if (childContent.trim()) {
+                      addChild();
+                    }
+                  }
+                  if (e.key === "Escape") {
+                    setAddingChild(false);
+                    setChildContent("");
+                  }
+                }}
+                onBlur={() => {
+                  if (!childContent.trim()) {
+                    setAddingChild(false);
+                  }
+                }}
+              />
+              <Button type="submit" size="sm">Add</Button>
+            </form>
           )}
         </div>
       </div>
@@ -894,43 +923,6 @@ function ItemRow({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Only show child form when not collapsed and not in focus mode */}
-      {!isCollapsed && !focusMode && addingChild && (
-        <form
-          onSubmit={e => {
-            e.preventDefault();
-            addChild();
-          }}
-          className="flex gap-2 items-center pl-3 ml-0 mt-2 border-l-2 border-blue-200"
-        >
-          <Input
-            ref={childInputRef}
-            className="border rounded px-2 py-1 text-sm flex-grow"
-            placeholder="New Task (or '- ' for Note)..."
-            value={childContent}
-            onChange={e => setChildContent(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
-                if (childContent.trim()) {
-                  addChild();
-                }
-              }
-              if (e.key === "Escape") {
-                setAddingChild(false);
-                setChildContent("");
-              }
-            }}
-            onBlur={() => {
-              if (!childContent.trim()) {
-                setAddingChild(false);
-              }
-            }}
-          />
-          <Button type="submit" size="sm">Add</Button>
-        </form>
-      )}
 
       {!isCollapsed && hasChildren && (
         <div className="mt-3 pl-3 border-l-2 border-blue-200">

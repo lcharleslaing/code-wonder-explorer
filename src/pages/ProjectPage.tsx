@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,10 +18,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 // Add imports for the ProjectControls components
 import { ProjectControlsProvider, useProjectControls } from "@/components/ItemList";
-import { Eye, EyeOff, ChevronsRight, ChevronsDown, FilterX, SortAsc, SortDesc, Clock, FileText, CheckSquare } from "lucide-react";
+import { Eye, EyeOff, ChevronsRight, ChevronsDown, FilterX, SortAsc, SortDesc, Clock, FileText, CheckSquare, Plus } from "lucide-react";
 
 // URL Regex (simple version, corrected)
 const URL_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/;
@@ -100,6 +108,9 @@ export default function ProjectPage() {
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [filterOption, setFilterOption] = useState<FilterOption>('all');
 
+  // Add state for the add item dialog
+  const [addItemDialogOpen, setAddItemDialogOpen] = useState(false);
+
   // Fetch project info
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ["project", projectId],
@@ -122,8 +133,7 @@ export default function ProjectPage() {
       const { data, error } = await supabase
         .from("items")
         .select("*, item_attachments(*)")
-        .eq("project_id", projectId)
-        .order("created_at", { ascending: false }); // Default to newest first
+        .eq("project_id", projectId);
       if (error) throw error;
       return data as Item[];
     },
@@ -131,7 +141,7 @@ export default function ProjectPage() {
   });
 
   // Apply sorting and filtering
-  const processedItems = (() => {
+  const processedItems = useMemo(() => {
     if (!items) return [];
 
     // First apply filtering
@@ -139,19 +149,41 @@ export default function ProjectPage() {
     if (filterOption === 'notes') {
       filteredItems = filteredItems.filter(item => !item.is_checklist);
     } else if (filterOption === 'tasks') {
-      filteredItems = filteredItems.filter(item => item.is_checklist);
+      // Get all task IDs
+      const taskIds = new Set(items.filter(item => item.is_checklist).map(item => item.id));
+
+      // Get parent IDs of tasks (for folder structure)
+      const parentIds = new Set<string>();
+      items.forEach(item => {
+        if (item.is_checklist && item.parent_id) {
+          parentIds.add(item.parent_id);
+        }
+      });
+
+      // Filter to include:
+      // 1. Direct tasks (is_checklist = true)
+      // 2. Parent folders that contain tasks
+      // 3. Items with task children
+      filteredItems = filteredItems.filter(item =>
+        item.is_checklist ||                                // Direct tasks
+        parentIds.has(item.id) ||                           // Parent folders containing tasks
+        items.some(i => i.parent_id === item.id && i.is_checklist) // Items with task children
+      );
     }
 
     // Then sort the filtered items
-    const sortedItems = [...filteredItems];
     if (sortOption === 'newest') {
-      sortedItems.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+      return [...filteredItems].sort((a, b) => {
+        return new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime();
+      });
     } else if (sortOption === 'oldest') {
-      sortedItems.sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
+      return [...filteredItems].sort((a, b) => {
+        return new Date(a.created_at || '').getTime() - new Date(b.created_at || '').getTime();
+      });
     }
 
-    return sortedItems;
-  })();
+    return filteredItems;
+  }, [items, filterOption, sortOption]);
 
   // Update Add Root Item logic
   const addRootItem = async (params: { content: string }) => {
@@ -225,7 +257,6 @@ export default function ProjectPage() {
 
   return (
     <ProjectControlsProvider>
-      {/* Full-width container for both navbar and content */}
       <div className="flex flex-col">
         {/* Secondary navbar with solid bg and no gap */}
         <ProjectNavbar />
@@ -239,83 +270,154 @@ export default function ProjectPage() {
             )}
           </div>
 
-          <div className="mb-8">
-            <h2 className="font-semibold text-xl mb-2">Add Note or Checklist</h2>
-            <div className="flex gap-2 flex-col sm:flex-row">
-              <AddItemForm onAdd={addRootItem} />
-            </div>
-          </div>
-
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="font-semibold text-xl">{project.title} Tasks & Notes</h2>
-
-              {/* Add sort and filter controls */}
-              <div className="flex gap-2 items-center">
-                <Select
-                  value={filterOption}
-                  onValueChange={(value) => setFilterOption(value as FilterOption)}
-                >
-                  <SelectTrigger className="w-[120px] h-8">
-                    <SelectValue placeholder="Filter" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">
-                      <div className="flex items-center">
-                        <FilterX className="mr-2 h-4 w-4" />
-                        <span>All Items</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="notes">
-                      <div className="flex items-center">
-                        <FileText className="mr-2 h-4 w-4" />
-                        <span>Notes Only</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="tasks">
-                      <div className="flex items-center">
-                        <CheckSquare className="mr-2 h-4 w-4" />
-                        <span>Tasks Only</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={sortOption}
-                  onValueChange={(value) => setSortOption(value as SortOption)}
-                >
-                  <SelectTrigger className="w-[140px] h-8">
-                    <SelectValue placeholder="Sort By" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">
-                      <div className="flex items-center">
-                        <SortDesc className="mr-2 h-4 w-4" />
-                        <span>Newest First</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="oldest">
-                      <div className="flex items-center">
-                        <SortAsc className="mr-2 h-4 w-4" />
-                        <span>Oldest First</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Pass the processed items to ItemList */}
-            <ItemList
-              items={processedItems}
-              projectId={projectId as string}
-              parentId={null}
-            />
-          </div>
+          {/* Conditionally render based on focus mode */}
+          <ProjectContent
+            project={project}
+            projectId={projectId as string}
+            items={processedItems}
+            addRootItem={addRootItem}
+            addItemDialogOpen={addItemDialogOpen}
+            setAddItemDialogOpen={setAddItemDialogOpen}
+            sortOption={sortOption}
+            setSortOption={setSortOption}
+            filterOption={filterOption}
+            setFilterOption={setFilterOption}
+          />
         </div>
       </div>
     </ProjectControlsProvider>
+  );
+}
+
+// Create a component for the main content that can use the ProjectControls context
+function ProjectContent({
+  project,
+  projectId,
+  items,
+  addRootItem,
+  addItemDialogOpen,
+  setAddItemDialogOpen,
+  sortOption,
+  setSortOption,
+  filterOption,
+  setFilterOption
+}: {
+  project: Project;
+  projectId: string;
+  items: Item[];
+  addRootItem: (params: { content: string }) => Promise<void>;
+  addItemDialogOpen: boolean;
+  setAddItemDialogOpen: (open: boolean) => void;
+  sortOption: SortOption;
+  setSortOption: (option: SortOption) => void;
+  filterOption: FilterOption;
+  setFilterOption: (option: FilterOption) => void;
+}) {
+  const { focusMode } = useProjectControls();
+
+  return (
+    <>
+      {/* Only show the add form when not in focus mode */}
+      {!focusMode && (
+        <div className="mb-8">
+          <h2 className="font-semibold text-xl mb-2">Add Note or Checklist</h2>
+          <div className="flex gap-2 flex-col sm:flex-row">
+            <AddItemForm onAdd={addRootItem} />
+          </div>
+        </div>
+      )}
+
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="font-semibold text-xl">{project.title} Tasks & Notes</h2>
+
+          <div className="flex gap-2 items-center">
+            {/* Add a "+" button that's visible in focus mode */}
+            {focusMode && (
+              <Dialog open={addItemDialogOpen} onOpenChange={setAddItemDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="h-8 bg-primary text-primary-foreground hover:bg-primary/90">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Item
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add New Item</DialogTitle>
+                  </DialogHeader>
+                  <AddItemForm
+                    onAdd={(params) => {
+                      addRootItem(params);
+                      setAddItemDialogOpen(false);
+                    }}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
+
+            {/* Sort and filter controls */}
+            <Select
+              value={filterOption}
+              onValueChange={(value) => setFilterOption(value as FilterOption)}
+            >
+              <SelectTrigger className="w-[120px] h-8">
+                <SelectValue placeholder="Filter" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  <div className="flex items-center">
+                    <FilterX className="mr-2 h-4 w-4" />
+                    <span>All Items</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="notes">
+                  <div className="flex items-center">
+                    <FileText className="mr-2 h-4 w-4" />
+                    <span>Notes Only</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="tasks">
+                  <div className="flex items-center">
+                    <CheckSquare className="mr-2 h-4 w-4" />
+                    <span>Tasks Only</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={sortOption}
+              onValueChange={(value) => setSortOption(value as SortOption)}
+            >
+              <SelectTrigger className="w-[140px] h-8">
+                <SelectValue placeholder="Sort By" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">
+                  <div className="flex items-center">
+                    <SortDesc className="mr-2 h-4 w-4" />
+                    <span>Newest First</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="oldest">
+                  <div className="flex items-center">
+                    <SortAsc className="mr-2 h-4 w-4" />
+                    <span>Oldest First</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Pass the processed items to ItemList */}
+        <ItemList
+          items={items}
+          projectId={projectId}
+          parentId={null}
+        />
+      </div>
+    </>
   );
 }
 
