@@ -22,16 +22,15 @@ export function Navbar({ onOpenSideDrawer }: NavbarProps) {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-background/95 shadow backdrop-blur-sm py-2" : "bg-background py-4"
-        }`}
+      style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50, background: '#fff', boxShadow: scrolled ? '0 2px 8px rgba(0,0,0,0.08)' : 'none', padding: scrolled ? '8px 0' : '16px 0', transition: 'all 0.3s', fontFamily: 'Roboto, Arial, sans-serif'
+      }}
     >
-      <div className="container mx-auto flex justify-between items-center">
-        <div className="flex items-center gap-2">
+      <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Button
-            variant="ghost"
-            size="icon"
+            style={{ minWidth: 40, minHeight: 40, marginRight: 8, background: 'none', border: 'none', boxShadow: 'none' }}
             onClick={onOpenSideDrawer}
-            className="md:hidden"
             aria-label="Menu"
           >
             <svg
@@ -50,21 +49,17 @@ export function Navbar({ onOpenSideDrawer }: NavbarProps) {
               <line x1="4" x2="20" y1="18" y2="18" />
             </svg>
           </Button>
-          <Link to="/" className="text-xl font-bold">Produx</Link>
+          <Link to="/" style={{ fontSize: 22, fontWeight: 700, color: '#333', textDecoration: 'none', letterSpacing: 1 }}>Produx</Link>
         </div>
 
-        <div className="hidden md:flex items-center gap-6">
-          <Link to="/" className="text-sm font-medium hover:text-primary transition-colors">
-            Dashboard
-          </Link>
-          <Link to="/settings" className="text-sm font-medium hover:text-primary transition-colors">
-            Settings
-          </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+          <Link to="/" style={{ fontSize: 15, fontWeight: 500, color: '#555', textDecoration: 'none', marginRight: 8 }}>Dashboard</Link>
+          <Link to="/settings" style={{ fontSize: 15, fontWeight: 500, color: '#555', textDecoration: 'none', marginRight: 8 }}>Settings</Link>
         </div>
 
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/auth">Get Started</Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <Button style={{ border: '1px solid #3f51b5', color: '#3f51b5', background: 'none', fontWeight: 500, letterSpacing: 1 }}>
+            <Link to="/auth" style={{ color: '#3f51b5', textDecoration: 'none', fontWeight: 500 }}>Get Started</Link>
           </Button>
           <LogoutButton />
         </div>

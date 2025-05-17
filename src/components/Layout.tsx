@@ -10,11 +10,11 @@ export function Layout() {
   const closeSideDrawer = () => setIsSideDrawerOpen(false);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div style={{ minHeight: '100vh', background: '#fafbfc' }}>
       <Navbar onOpenSideDrawer={openSideDrawer} />
       <SideDrawer isOpen={isSideDrawerOpen} onClose={closeSideDrawer} />
 
-      <main className="pt-20 pb-8">
+      <main style={{ paddingTop: 64, paddingBottom: 32 }}>
         <Outlet />
       </main>
     </div>

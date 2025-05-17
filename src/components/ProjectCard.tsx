@@ -157,33 +157,31 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
   return (
     <>
-      <Link to={`/projects/${project.id}`}>
-        <Card className="hover:bg-accent/50 transition-colors cursor-pointer h-[300px] flex flex-col">
-          <CardHeader className="flex-shrink-0">
-            <CardTitle className="line-clamp-1">{project.title}</CardTitle>
+      <Link to={`/projects/${project.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Card style={{ cursor: 'pointer', height: 300, display: 'flex', flexDirection: 'column', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: 8, transition: 'background 0.2s' }}>
+          <CardHeader style={{ flexShrink: 0 }}>
+            <CardTitle style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 20 }}>{project.title}</CardTitle>
             {project.description && (
-              <CardDescription className="line-clamp-2">{project.description}</CardDescription>
+              <CardDescription style={{ overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', fontSize: 14 }}>{project.description}</CardDescription>
             )}
           </CardHeader>
 
-          <CardContent className="flex-grow overflow-hidden">
-            <div className="w-full h-32 overflow-hidden rounded-md flex justify-center items-center bg-background">
+          <CardContent style={{ flexGrow: 1, overflow: 'hidden' }}>
+            <div style={{ width: '100%', height: 128, overflow: 'hidden', borderRadius: 8, display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#fafafa' }}>
               <img
                 src={thumbnailUrl}
                 alt={`Thumbnail for ${project.title}`}
-                className={isDefaultLogo
-                  ? "h-full w-auto max-h-32 object-contain"
-                  : "w-full h-full object-cover"
+                style={isDefaultLogo
+                  ? { height: '100%', width: 'auto', maxHeight: 128, objectFit: 'contain' }
+                  : { width: '100%', height: '100%', objectFit: 'cover' }
                 }
               />
             </div>
           </CardContent>
 
-          <CardFooter className="flex gap-2 mt-auto">
+          <CardFooter style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
             <Button
-              variant="outline"
-              size="sm"
-              className="flex-1"
+              style={{ flex: 1 }}
               onClick={(e) => {
                 handleButtonClick(e);
                 setIsEditDialogOpen(true);
@@ -192,9 +190,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
               Edit
             </Button>
             <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 text-destructive hover:bg-destructive/10"
+              style={{ flex: 1, color: '#d32f2f', background: 'none', border: '1px solid #d32f2f' }}
               onClick={(e) => {
                 handleButtonClick(e);
                 setIsDeleteDialogOpen(true);
@@ -225,7 +221,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
               onChange={(e) => setEditedProject(prev => ({ ...prev, description: e.target.value }))}
             />
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              <Button type="button" onClick={() => setIsEditDialogOpen(false)}>
                 Cancel
               </Button>
               <Button type="submit" disabled={!editedProject.title}>
