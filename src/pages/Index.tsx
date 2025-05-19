@@ -2,7 +2,7 @@
 // Show "Go to Login" or dashboard button depending on auth state
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import Button from "@mui/material/Button";
 
 const Index = () => {
   const { user, isLoading } = useSupabaseAuth();
