@@ -158,3 +158,7 @@ The application uses the following database tables:
 ## 🙏 Acknowledgements
 
 This project uses various open-source libraries and tools, including React, TypeScript, Tailwind CSS, shadcn/ui, Supabase, and more.
+
+## 📝 Development Branch
+
+This branch (`feature/development`) was created on March 19, 2024, as the starting point for new development work. All future changes will be made through feature branches and merged back to this branch after review.
