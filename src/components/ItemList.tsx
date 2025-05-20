@@ -410,11 +410,12 @@ export default function ItemList({
     // 1. Mouse position - if it's close to the indent area
     // 2. The target item having children (or allowing children)
     // 3. Not creating circular references
-    const isShiftKeyPressed = event.activatorEvent instanceof KeyboardEvent && event.activatorEvent.shiftKey;
+    const activator = event.activatorEvent as PointerEvent | KeyboardEvent | undefined;
+    const isShiftKeyPressed = !!activator && 'shiftKey' in activator && activator.shiftKey;
     const hasOverItemChildren = items.some(i => i.parent_id === overItem.id);
-    
-    // Make active item a child of over item when Shift is pressed, or over item already has children
-    const makeChild = isShiftKeyPressed && hasOverItemChildren;
+
+    // Make active item a child if Shift is held OR the over item already has children
+    const makeChild = isShiftKeyPressed || hasOverItemChildren;
     
     if (makeChild) {
       // Target parent will be the over item
