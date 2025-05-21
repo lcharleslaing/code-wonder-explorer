@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Produx App - SOP Editor</title>
+  <!-- Google Fonts for Typography -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    /* Base Styles */
+    body {
+      margin: 0;
+      font-family: 'Open Sans', Arial, sans-serif;
+      color: #333333;
+      background-color: #F5F5F5;
+      line-height: 1.5;
+    }
+    h1, h2, h3 {
+      font-family: 'Montserrat', sans-serif;
+      margin-top: 0;
+    }
+
+    /* Header */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: #ffffff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 0.5rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-links {
+      display: flex;
+      gap: 1rem;
+    }
+    .nav-links a {
+      text-decoration: none;
+      color: #333333;
+      font-weight: 600;
+    }
+    .hamburger {
+      display: none;
+      cursor: pointer;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .hamburger span {
+      width: 25px;
+      height: 3px;
+      background: #333333;
+    }
+    @media (max-width: 600px) {
+      .nav-links {
+        display: none;
+      }
+      .hamburger {
+        display: flex;
+      }
+    }
+
+    /* Main Editor Layout */
+    .main-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+    .editor-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    #stepsContainer {
+      margin-bottom: 2rem;
+    }
+    .step {
+      background: #ffffff;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      margin-bottom: 1.5rem;
+    }
+    .step-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .step-header h2 {
+      color: #2F80ED;
+      font-size: 1.25rem;
+    }
+    .step button {
+      margin-top: 0.5rem;
+      padding: 0.4rem 0.75rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-family: 'Open Sans', Arial, sans-serif;
+    }
+    .add-note-btn, .add-check-btn {
+      background: #56CCF2;
+      color: #ffffff;
+    }
+    .delete-step-btn {
+      background: #F2C94C;
+      color: #333333;
+    }
+    .step textarea {
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .checklist-item input[type="text"] {
+      flex: 1;
+      margin-left: 0.5rem;
+    }
+    .remove-check-btn {
+      margin-left: 0.5rem;
+      background: #F2C94C;
+      color: #333333;
+    }
+    #addStepBtn {
+      display: block;
+      background: #2F80ED;
+      color: #ffffff;
+      padding: 0.75rem 1.25rem;
+      border: none;
+      border-radius: 4px;
+      margin: 0 auto;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    #addStepBtn:hover {
+      background: #236ad0;
+    }
+
+    /* Footer */
+    footer {
+      background: #333333;
+      color: #FFFFFF;
+      text-align: center;
+      padding: 1rem;
+    }
+    footer a {
+      color: #56CCF2;
+      margin: 0 0.5rem;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header with navigation -->
+  <header class="header">
+    <div class="logo">Produx App</div>
+    <nav class="nav-links" id="navLinks">
+      <a href="#">Dashboard</a>
+      <a href="#">Projects</a>
+      <a href="#">SOPs</a>
+      <a href="#">Sign Out</a>
+    </nav>
+    <div class="hamburger" id="hamburger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <div class="editor-header">
+      <h1>Create Your SOP</h1>
+      <p>Define clear processes and tasks for your team.</p>
+    </div>
+
+    <div id="stepsContainer"></div>
+    <button id="addStepBtn">Add New Step</button>
+
+    <!-- Collaboration placeholder -->
+    <section id="collaboration" style="margin-top:2rem; text-align:center;">
+      <p><em>Collaborators will appear here.</em></p>
+    </section>
+  </main>
+
+  <footer>
+    <p>
+      <a href="#">About</a>|
+      <a href="#">Blog</a>|
+      <a href="#">Terms</a>|
+      <a href="#">Privacy</a>
+    </p>
+    <p>Produx App &mdash; From concept to launch.</p>
+  </footer>
+
+  <script>
+    // Mobile hamburger menu toggle
+    const hamburger = document.getElementById('hamburger');
+    const navLinks = document.getElementById('navLinks');
+    hamburger.addEventListener('click', () => {
+      navLinks.style.display = navLinks.style.display === 'flex' ? 'none' : 'flex';
+    });
+
+    // SOP Step Logic
+    const stepsContainer = document.getElementById('stepsContainer');
+    const addStepBtn = document.getElementById('addStepBtn');
+
+    let stepCount = 0;
+
+    function createStep() {
+      stepCount++;
+      const step = document.createElement('div');
+      step.className = 'step';
+      step.innerHTML = `
+        <div class="step-header">
+          <h2>Step ${stepCount}</h2>
+          <button class="delete-step-btn">Delete Step</button>
+        </div>
+        <div class="notes-section">
+          <h3>Notes</h3>
+          <div class="notes-list"></div>
+          <button class="add-note-btn">Add Note</button>
+        </div>
+        <div class="checklist-section">
+          <h3>Checklist</h3>
+          <div class="checklist-list"></div>
+          <button class="add-check-btn">Add Checklist Item</button>
+        </div>
+      `;
+
+      // Delete step
+      step.querySelector('.delete-step-btn').addEventListener('click', () => {
+        step.remove();
+        renumberSteps();
+      });
+
+      // Add note
+      step.querySelector('.add-note-btn').addEventListener('click', () => {
+        const notesList = step.querySelector('.notes-list');
+        const note = document.createElement('textarea');
+        note.rows = 2;
+        notesList.appendChild(note);
+      });
+
+      // Add checklist item
+      step.querySelector('.add-check-btn').addEventListener('click', () => {
+        const list = step.querySelector('.checklist-list');
+        const item = document.createElement('div');
+        item.className = 'checklist-item';
+        item.innerHTML = `
+          <input type="checkbox">
+          <input type="text" placeholder="Checklist item">
+          <button class="remove-check-btn">X</button>
+        `;
+        item.querySelector('.remove-check-btn').addEventListener('click', () => item.remove());
+        list.appendChild(item);
+      });
+
+      stepsContainer.appendChild(step);
+    }
+
+    function renumberSteps() {
+      const allSteps = stepsContainer.querySelectorAll('.step');
+      stepCount = allSteps.length;
+      allSteps.forEach((step, index) => {
+        step.querySelector('h2').textContent = `Step ${index + 1}`;
+      });
+    }
+
+    addStepBtn.addEventListener('click', createStep);
+
+    // Create an initial step on load
+    createStep();
+  </script>
+</body>
+</html>
