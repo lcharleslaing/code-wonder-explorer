@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/use-toast";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { LayoutGrid, List } from "lucide-react";
+import { theme } from "@/theme";
 
 type ViewMode = 'grid' | 'list';
 
@@ -123,23 +124,39 @@ export default function ProjectDashboard() {
   }
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+    <div style={{ maxWidth: theme.containerMaxWidth, margin: "0 auto" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: theme.spacing.md,
+        }}
+      >
         <h1 style={{ fontSize: 32, fontWeight: 700 }}>Projects</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ display: 'flex', border: '1px solid #ccc', borderRadius: 4, overflow: 'hidden' }}>
+        <div style={{ display: "flex", alignItems: "center", gap: theme.spacing.sm }}>
+          <div
+            style={{
+              display: "flex",
+              border: `1px solid ${theme.colors.border}`,
+              borderRadius: 4,
+              overflow: "hidden",
+            }}
+          >
             <Button
-              style={{ borderRadius: 0, padding: '0 12px' }}
-              onClick={() => setViewMode('grid')}
-              disabled={viewMode === 'grid'}
+              variant="ghost"
+              style={{ borderRadius: 0, padding: "0 12px" }}
+              onClick={() => setViewMode("grid")}
+              disabled={viewMode === "grid"}
             >
               <LayoutGrid style={{ height: 16, width: 16, marginRight: 4 }} />
               Grid
             </Button>
             <Button
-              style={{ borderRadius: 0, padding: '0 12px' }}
-              onClick={() => setViewMode('list')}
-              disabled={viewMode === 'list'}
+              variant="ghost"
+              style={{ borderRadius: 0, padding: "0 12px" }}
+              onClick={() => setViewMode("list")}
+              disabled={viewMode === "list"}
             >
               <List style={{ height: 16, width: 16, marginRight: 4 }} />
               List
@@ -153,7 +170,13 @@ export default function ProjectDashboard() {
               <DialogHeader>
                 <DialogTitle>Create New Project</DialogTitle>
               </DialogHeader>
-              <div style={{ display: 'grid', gap: 16, padding: '16px 0' }}>
+              <div
+                style={{
+                  display: "grid",
+                  gap: theme.spacing.sm,
+                  padding: `${theme.spacing.sm}px 0`,
+                }}
+              >
                 <Input
                   placeholder="Project title"
                   value={newProject.title}
@@ -180,25 +203,39 @@ export default function ProjectDashboard() {
         </div>
       </div>
       {viewMode === 'grid' ? (
-        <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+        <div
+          style={{
+            display: "grid",
+            gap: theme.spacing.sm,
+            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          }}
+        >
           {projects?.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: theme.spacing.xs }}>
           {projects?.map((project) => (
             <div
               key={project.id}
-              style={{ border: '1px solid #ccc', borderRadius: 4, padding: 16, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+              style={{
+                border: `1px solid ${theme.colors.border}`,
+                borderRadius: 4,
+                padding: theme.spacing.sm,
+                cursor: "pointer",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
               onClick={() => navigate(`/projects/${project.id}`)}
             >
               <div>
                 <h3 style={{ fontWeight: 600, fontSize: 20 }}>{project.title}</h3>
                 {project.description && (
-                  <p style={{ color: '#888', fontSize: 14, marginTop: 4 }}>{project.description}</p>
+                  <p style={{ color: "#888", fontSize: 14, marginTop: 4 }}>{project.description}</p>
                 )}
-                <div style={{ fontSize: 12, color: '#888', marginTop: 8 }}>
+                <div style={{ fontSize: 12, color: "#888", marginTop: theme.spacing.xs }}>
                   {project.items ? `${project.items.length} items` : "No items"}
                 </div>
               </div>

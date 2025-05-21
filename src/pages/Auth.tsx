@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
+import { theme } from "@/theme";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -35,10 +36,28 @@ export default function Auth() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5' }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: theme.colors.background,
+      }}
+    >
       <form
         onSubmit={handleSubmit}
-        style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: 8, padding: 32, display: 'flex', flexDirection: 'column', gap: 24, width: '100%', maxWidth: 400 }}
+        style={{
+          background: "#fff",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+          borderRadius: 8,
+          padding: theme.spacing.md,
+          display: "flex",
+          flexDirection: "column",
+          gap: theme.spacing.sm,
+          width: "100%",
+          maxWidth: 400,
+        }}
       >
         <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8, textAlign: 'center' }}>
           {mode === "login" ? "Log In" : "Sign Up"}
@@ -67,7 +86,12 @@ export default function Auth() {
         <Button
           type="button"
           onClick={() => setMode(mode === "login" ? "signup" : "login")}
-          style={{ background: 'none', color: '#3f51b5', boxShadow: 'none', textTransform: 'none' }}
+          style={{
+            background: "none",
+            color: theme.colors.primary,
+            boxShadow: "none",
+            textTransform: "none",
+          }}
         >
           {mode === "login"
             ? "Don't have an account? Sign Up"
