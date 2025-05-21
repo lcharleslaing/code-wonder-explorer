@@ -2,19 +2,19 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, ...props }, ref) => {
+const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
+  ({ ...props }, ref) => {
+    React.useEffect(() => {
+      // @ts-expect-error: mdc is injected by Material Components Web CDN and not typed in TS
+      if (window.mdc && window.mdc.autoInit) window.mdc.autoInit();
+    }, []);
     return (
-      <input
-        type={type}
-        className={cn(
-          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-          className
-        )}
-        ref={ref}
-        {...props}
-      />
-    )
+      <label className="mdc-text-field mdc-text-field--filled" style={{ width: '100%' }}>
+        <span className="mdc-text-field__ripple"></span>
+        <input className="mdc-text-field__input" ref={ref} {...props} aria-labelledby={props.id || undefined} />
+        <span className="mdc-line-ripple"></span>
+      </label>
+    );
   }
 )
 Input.displayName = "Input"

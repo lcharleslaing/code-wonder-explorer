@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -27,20 +26,21 @@ export default function Auth() {
         toast({ title: "Success", description: "You are now logged in!" });
         navigate("/");
       }
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      toast({ title: "Error", description: errMsg, variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted">
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5' }}>
       <form
         onSubmit={handleSubmit}
-        className="bg-background shadow-lg rounded-md p-8 flex flex-col gap-6 w-full max-w-md"
+        style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: 8, padding: 32, display: 'flex', flexDirection: 'column', gap: 24, width: '100%', maxWidth: 400 }}
       >
-        <h2 className="text-xl font-bold mb-2 text-center">
+        <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8, textAlign: 'center' }}>
           {mode === "login" ? "Log In" : "Sign Up"}
         </h2>
         <Input
@@ -61,13 +61,13 @@ export default function Auth() {
           onChange={(e) => setPassword(e.target.value)}
           disabled={loading}
         />
-        <Button type="submit" loading={loading ? 1 : 0}>
+        <Button type="submit" disabled={loading}>
           {mode === "login" ? "Log In" : "Sign Up"}
         </Button>
         <Button
           type="button"
-          variant="link"
           onClick={() => setMode(mode === "login" ? "signup" : "login")}
+          style={{ background: 'none', color: '#3f51b5', boxShadow: 'none', textTransform: 'none' }}
         >
           {mode === "login"
             ? "Don't have an account? Sign Up"

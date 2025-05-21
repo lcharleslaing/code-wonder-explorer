@@ -20,7 +20,7 @@ export default function ProjectDashboard() {
 
   const [isCreating, setIsCreating] = useState(false);
   const [newProject, setNewProject] = useState({ title: "", description: "" });
-  
+
   // Initialize view mode from localStorage or default to grid
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const savedViewMode = localStorage.getItem('dashboardViewMode');
@@ -123,39 +123,37 @@ export default function ProjectDashboard() {
   }
 
   return (
-    <div className="container mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Projects</h1>
-        <div className="flex items-center gap-4">
-          <div className="flex border rounded-md overflow-hidden">
-            <Button 
-              variant={viewMode === 'grid' ? "default" : "ghost"} 
-              size="sm"
+    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <h1 style={{ fontSize: 32, fontWeight: 700 }}>Projects</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ display: 'flex', border: '1px solid #ccc', borderRadius: 4, overflow: 'hidden' }}>
+            <Button
+              style={{ borderRadius: 0, padding: '0 12px' }}
               onClick={() => setViewMode('grid')}
-              className="rounded-none px-3"
+              disabled={viewMode === 'grid'}
             >
-              <LayoutGrid className="h-4 w-4 mr-1" />
+              <LayoutGrid style={{ height: 16, width: 16, marginRight: 4 }} />
               Grid
             </Button>
-            <Button 
-              variant={viewMode === 'list' ? "default" : "ghost"} 
-              size="sm"
+            <Button
+              style={{ borderRadius: 0, padding: '0 12px' }}
               onClick={() => setViewMode('list')}
-              className="rounded-none px-3"
+              disabled={viewMode === 'list'}
             >
-              <List className="h-4 w-4 mr-1" />
+              <List style={{ height: 16, width: 16, marginRight: 4 }} />
               List
             </Button>
           </div>
           <Dialog open={isCreating} onOpenChange={setIsCreating}>
-            <DialogTrigger asChild>
+            <DialogTrigger>
               <Button>Create Project</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Create New Project</DialogTitle>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
+              <div style={{ display: 'grid', gap: 16, padding: '16px 0' }}>
                 <Input
                   placeholder="Project title"
                   value={newProject.title}
@@ -181,36 +179,29 @@ export default function ProjectDashboard() {
           </Dialog>
         </div>
       </div>
-      
       {viewMode === 'grid' ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
           {projects?.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {projects?.map((project) => (
-            <div 
-              key={project.id} 
-              className="border rounded-md p-4 hover:border-primary cursor-pointer flex justify-between items-center"
+            <div
+              key={project.id}
+              style={{ border: '1px solid #ccc', borderRadius: 4, padding: 16, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
               onClick={() => navigate(`/projects/${project.id}`)}
             >
               <div>
-                <h3 className="font-semibold text-lg">{project.title}</h3>
+                <h3 style={{ fontWeight: 600, fontSize: 20 }}>{project.title}</h3>
                 {project.description && (
-                  <p className="text-muted-foreground text-sm mt-1">{project.description}</p>
+                  <p style={{ color: '#888', fontSize: 14, marginTop: 4 }}>{project.description}</p>
                 )}
-                <div className="text-xs text-muted-foreground mt-2">
+                <div style={{ fontSize: 12, color: '#888', marginTop: 8 }}>
                   {project.items ? `${project.items.length} items` : "No items"}
                 </div>
               </div>
-              <Button variant="ghost" size="sm" onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/projects/${project.id}`);
-              }}>
-                Open
-              </Button>
             </div>
           ))}
         </div>

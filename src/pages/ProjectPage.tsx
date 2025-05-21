@@ -45,52 +45,58 @@ function ProjectNavbar() {
   const navigate = useNavigate();
 
   return (
-    <div className="sticky top-[56px] z-40 w-full bg-background border-b">
-      <div className="container mx-auto flex justify-between items-center h-12">
+    <div style={{
+      position: 'sticky',
+      top: 64,
+      zIndex: 40,
+      width: '100%',
+      background: '#fff',
+      borderBottom: '1px solid #eee',
+      boxShadow: '0 1px 4px rgba(0,0,0,0.03)',
+      fontFamily: 'Roboto, Arial, sans-serif',
+    }}>
+      <div style={{
+        maxWidth: 1200,
+        margin: '0 auto',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        height: 56,
+        padding: '0 24px',
+      }}>
         <Button
-          variant="ghost"
-          size="sm"
+          style={{ background: 'none', border: '1px solid #3f51b5', color: '#3f51b5', fontWeight: 500, borderRadius: 6, padding: '6px 16px', marginRight: 12, cursor: 'pointer', transition: 'background 0.2s' }}
           onClick={() => navigate("/")}
-          className="px-2"
+          onMouseOver={e => (e.currentTarget.style.background = '#f5f5f5')}
+          onMouseOut={e => (e.currentTarget.style.background = 'none')}
         >
           ← Back to Dashboard
         </Button>
-
-        <div className="flex gap-2">
+        <div style={{ display: 'flex', gap: 12 }}>
           {hasChildren && (
             <Button
-              variant="outline"
-              size="sm"
+              style={{ background: 'none', border: '1px solid #3f51b5', color: '#3f51b5', fontWeight: 500, borderRadius: 6, padding: '6px 16px', cursor: 'pointer', transition: 'background 0.2s' }}
               onClick={toggleCollapsed}
+              onMouseOver={e => (e.currentTarget.style.background = '#f5f5f5')}
+              onMouseOut={e => (e.currentTarget.style.background = 'none')}
             >
               {isCollapsed ? (
-                <>
-                  <ChevronsRight className="h-4 w-4 mr-1" />
-                  Expand All
-                </>
+                <><ChevronsRight style={{ height: 18, width: 18, marginRight: 6 }} /> Expand All</>
               ) : (
-                <>
-                  <ChevronsDown className="h-4 w-4 mr-1" />
-                  Collapse All
-                </>
+                <><ChevronsDown style={{ height: 18, width: 18, marginRight: 6 }} /> Collapse All</>
               )}
             </Button>
           )}
           <Button
-            variant={focusMode ? "default" : "outline"}
-            size="sm"
+            style={{ background: focusMode ? '#3f51b5' : 'none', color: focusMode ? '#fff' : '#3f51b5', border: '1px solid #3f51b5', fontWeight: 500, borderRadius: 6, padding: '6px 16px', cursor: 'pointer', transition: 'background 0.2s' }}
             onClick={toggleFocusMode}
+            onMouseOver={e => (e.currentTarget.style.background = focusMode ? '#3949ab' : '#f5f5f5')}
+            onMouseOut={e => (e.currentTarget.style.background = focusMode ? '#3f51b5' : 'none')}
           >
             {focusMode ? (
-              <>
-                <Eye className="h-4 w-4 mr-1" />
-                Normal View
-              </>
+              <><Eye style={{ height: 18, width: 18, marginRight: 6 }} /> Normal View</>
             ) : (
-              <>
-                <EyeOff className="h-4 w-4 mr-1" />
-                Focus Mode
-              </>
+              <><EyeOff style={{ height: 18, width: 18, marginRight: 6 }} /> Focus Mode</>
             )}
           </Button>
         </div>
@@ -113,8 +119,8 @@ export default function ProjectPage() {
 
   const [filterOption, setFilterOption] = useState<FilterOption>(() => {
     const savedFilter = localStorage.getItem(`project_${projectId}_filterOption`);
-    return (savedFilter === 'all' || savedFilter === 'notes' || savedFilter === 'tasks') 
-      ? savedFilter as FilterOption 
+    return (savedFilter === 'all' || savedFilter === 'notes' || savedFilter === 'tasks')
+      ? savedFilter as FilterOption
       : 'all';
   });
 
@@ -261,10 +267,10 @@ export default function ProjectPage() {
     }
 
     toast({ title: "Added!", description: "Item added." });
-    
+
     // Update project timestamp to move it to the top of dashboard
     await updateProjectTimestamp(projectId);
-    
+
     queryClient.invalidateQueries({ queryKey: ["items", projectId] });
   };
 
@@ -284,20 +290,23 @@ export default function ProjectPage() {
 
   return (
     <ProjectControlsProvider projectId={projectId as string}>
-      <div className="flex flex-col">
+      <div style={{ background: '#fafbfc', minHeight: '100vh', fontFamily: 'Roboto, Arial, sans-serif' }}>
         {/* Secondary navbar with solid bg and no gap */}
         <ProjectNavbar />
-
         {/* Main content area with padding for sticky navbar */}
-        <div className="container mx-auto py-6 pt-4">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold">{project.title}</h1>
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 0' }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: 12,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+            padding: '32px 32px 24px 32px',
+            marginBottom: 32,
+          }}>
+            <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 8 }}>{project.title}</h1>
             {project.description && (
-              <p className="text-muted-foreground mt-1">{project.description}</p>
+              <p style={{ color: '#666', fontSize: 18, marginBottom: 0 }}>{project.description}</p>
             )}
           </div>
-
-          {/* Conditionally render based on focus mode */}
           <ProjectContent
             project={project}
             projectId={projectId as string}
@@ -346,27 +355,31 @@ function ProjectContent({
     <>
       {/* Only show the add form when not in focus mode */}
       {!focusMode && (
-        <div className="mb-8">
-          <h2 className="font-semibold text-xl mb-2">Add Note or Checklist</h2>
-          <div className="flex gap-2 flex-col sm:flex-row">
-            <AddItemForm onAdd={addRootItem} />
-          </div>
+        <div style={{
+          background: '#fff',
+          borderRadius: 12,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          padding: 24,
+          marginBottom: 32,
+        }}>
+          <h2 style={{ fontWeight: 600, fontSize: 22, marginBottom: 12 }}>Add Note or Checklist</h2>
+          <AddItemForm onAdd={addRootItem} />
         </div>
       )}
-
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="font-semibold text-xl">{project.title} Tasks & Notes</h2>
-
-          <div className="flex gap-2 items-center">
-            {/* Add a "+" button that's visible in focus mode */}
+      <div style={{
+        background: '#fff',
+        borderRadius: 12,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        padding: 24,
+        marginBottom: 32,
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+          <h2 style={{ fontWeight: 600, fontSize: 22 }}>{project.title} Tasks & Notes</h2>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             {focusMode && (
               <Dialog open={addItemDialogOpen} onOpenChange={setAddItemDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="h-8 bg-primary text-primary-foreground hover:bg-primary/90">
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Item
-                  </Button>
+                <DialogTrigger>
+                  <Button style={{ height: 36, background: '#3f51b5', color: '#fff', borderRadius: 6, fontWeight: 500, padding: '0 18px', fontSize: 15 }}> <Plus style={{ height: 18, width: 18, marginRight: 6 }} /> Add Item </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
@@ -381,68 +394,28 @@ function ProjectContent({
                 </DialogContent>
               </Dialog>
             )}
-
-            {/* Sort and filter controls */}
-            <Select
-              value={filterOption}
-              onValueChange={(value) => setFilterOption(value as FilterOption)}
-            >
-              <SelectTrigger className="w-[120px] h-8">
+            <Select value={filterOption} onValueChange={value => setFilterOption(value as FilterOption)}>
+              <SelectTrigger style={{ width: 120, height: 36, borderRadius: 6, fontSize: 15 }}>
                 <SelectValue placeholder="Filter" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">
-                  <div className="flex items-center">
-                    <FilterX className="mr-2 h-4 w-4" />
-                    <span>All Items</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="notes">
-                  <div className="flex items-center">
-                    <FileText className="mr-2 h-4 w-4" />
-                    <span>Notes Only</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="tasks">
-                  <div className="flex items-center">
-                    <CheckSquare className="mr-2 h-4 w-4" />
-                    <span>Tasks Only</span>
-                  </div>
-                </SelectItem>
+                <SelectItem value="all"><FilterX style={{ marginRight: 8, height: 16, width: 16 }} /> All Items</SelectItem>
+                <SelectItem value="notes"><FileText style={{ marginRight: 8, height: 16, width: 16 }} /> Notes Only</SelectItem>
+                <SelectItem value="tasks"><CheckSquare style={{ marginRight: 8, height: 16, width: 16 }} /> Tasks Only</SelectItem>
               </SelectContent>
             </Select>
-
-            <Select
-              value={sortOption}
-              onValueChange={(value) => setSortOption(value as SortOption)}
-            >
-              <SelectTrigger className="w-[140px] h-8">
+            <Select value={sortOption} onValueChange={value => setSortOption(value as SortOption)}>
+              <SelectTrigger style={{ width: 140, height: 36, borderRadius: 6, fontSize: 15 }}>
                 <SelectValue placeholder="Sort By" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="newest">
-                  <div className="flex items-center">
-                    <SortDesc className="mr-2 h-4 w-4" />
-                    <span>Recently Updated</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="oldest">
-                  <div className="flex items-center">
-                    <SortAsc className="mr-2 h-4 w-4" />
-                    <span>Oldest Updates</span>
-                  </div>
-                </SelectItem>
+                <SelectItem value="newest"><SortDesc style={{ marginRight: 8, height: 16, width: 16 }} /> Recently Updated</SelectItem>
+                <SelectItem value="oldest"><SortAsc style={{ marginRight: 8, height: 16, width: 16 }} /> Oldest Updates</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
-
-        {/* Pass the processed items to ItemList */}
-        <ItemList
-          items={items}
-          projectId={projectId}
-          parentId={null}
-        />
+        <ItemList items={items} projectId={projectId} parentId={null} />
       </div>
     </>
   );
@@ -459,9 +432,7 @@ function AddItemForm({ onAdd }: { onAdd: (params: { content: string }) => void }
     }
   }, [content]);
 
-  // Add a new effect for auto-focus when component mounts
   useEffect(() => {
-    // Focus the textarea when the component mounts
     if (textareaRef.current) {
       textareaRef.current.focus();
     }
@@ -475,23 +446,22 @@ function AddItemForm({ onAdd }: { onAdd: (params: { content: string }) => void }
     setContent("");
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.focus(); // Re-focus after submitting
+      textareaRef.current.focus();
     }
   };
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col sm:flex-row gap-2 items-start sm:items-center w-full"
+      style={{ display: 'flex', gap: 12, alignItems: 'flex-end', width: '100%' }}
     >
       <Textarea
         ref={textareaRef}
-        className="flex-grow min-h-[40px] resize-none overflow-hidden"
+        style={{ flexGrow: 1, minHeight: 40, resize: 'none', overflow: 'hidden', fontSize: 16, borderRadius: 6, border: '1px solid #ccc', padding: 12, fontFamily: 'Roboto, Arial, sans-serif' }}
         placeholder="New Task (or '- ' for Note)..."
         value={content}
         onChange={e => setContent(e.target.value)}
         onKeyDown={e => {
-          // Only submit with Ctrl+Enter, normal Enter adds a new line
           if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
             const trimmedContent = content.trim();
@@ -504,7 +474,6 @@ function AddItemForm({ onAdd }: { onAdd: (params: { content: string }) => void }
               }
             }
           } else if (e.key === "Escape") {
-            // Clear the input on Escape
             setContent("");
             textareaRef.current?.blur();
           }
@@ -512,7 +481,7 @@ function AddItemForm({ onAdd }: { onAdd: (params: { content: string }) => void }
         required
         rows={1}
       />
-      <Button type="submit">Add</Button>
+      <Button type="submit" style={{ height: 40, background: '#3f51b5', color: '#fff', borderRadius: 6, fontWeight: 500, padding: '0 18px', fontSize: 15 }}>Add</Button>
     </form>
   );
 }

@@ -9,10 +9,6 @@ Produx is a modern, intuitive task management application for organizing project
 - View project dashboards with task completion statistics
 - Organize tasks and notes hierarchically within projects
 
-## UI Library
-
-This project now uses [Material UI](https://mui.com/) for its component library and theming.
-
 ### Task & Note System
 - Create both checklist items (tasks) and notes
 - Nested hierarchy with parent-child relationships
@@ -162,7 +158,3 @@ The application uses the following database tables:
 ## 🙏 Acknowledgements
 
 This project uses various open-source libraries and tools, including React, TypeScript, Tailwind CSS, shadcn/ui, Supabase, and more.
-
-## 📝 Development Branch
-
-This branch (`feature/development`) was created on March 19, 2024, as the starting point for new development work. All future changes will be made through feature branches and merged back to this branch after review.

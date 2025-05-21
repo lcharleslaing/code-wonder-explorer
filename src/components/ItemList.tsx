@@ -82,19 +82,19 @@ export const AltKeyContext = createContext<boolean>(false);
 export function ProjectControlsProvider({ children, projectId }: { children: React.ReactNode, projectId?: string }) {
   // Get saved states from localStorage with project-specific keys if projectId is available
   const storageKeyPrefix = projectId ? `project_${projectId}_` : 'global_';
-  
+
   const [focusMode, setFocusMode] = useState(() => {
     const savedMode = localStorage.getItem(`${storageKeyPrefix}focusMode`);
     return savedMode === 'true';
   });
-  
+
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const savedCollapsed = localStorage.getItem(`${storageKeyPrefix}isCollapsed`);
     return savedCollapsed === 'true';
   });
-  
+
   const [hasChildren, setHasChildren] = useState(false);
-  
+
   // Add global Alt key tracking
   const [isAltPressed, setIsAltPressed] = useState(false);
 
@@ -105,17 +105,17 @@ export function ProjectControlsProvider({ children, projectId }: { children: Rea
         setIsAltPressed(true);
       }
     };
-    
+
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'Alt') {
         setIsAltPressed(false);
       }
     };
-    
+
     // Add event listeners
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
-    
+
     // Clean up
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
@@ -124,20 +124,20 @@ export function ProjectControlsProvider({ children, projectId }: { children: Rea
   }, []);
 
   const toggleFocusMode = useCallback(() => setFocusMode(prev => !prev), []);
-  
+
   // Improved toggle function with better state handling
   const toggleCollapsed = useCallback(() => {
     setIsCollapsed(prev => {
       const newState = !prev;
-      
+
       // Force update localStorage immediately for global state
       localStorage.setItem(`${storageKeyPrefix}isCollapsed`, newState.toString());
-      
+
       // Also clear any individual item collapse states to ensure proper inheritance
       if (projectId) {
         // Reset localStorage for all items when toggling global collapse
         const itemPrefix = `project_${projectId}_item_`;
-        
+
         // Find and update all item-specific collapse states
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
@@ -146,19 +146,19 @@ export function ProjectControlsProvider({ children, projectId }: { children: Rea
           }
         }
       }
-      
+
       return newState;
     });
   }, [storageKeyPrefix, projectId]);
 
   // Add a function to update hasChildren
   const updateHasChildren = useCallback((value: boolean) => setHasChildren(value), []);
-  
+
   // Save states to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem(`${storageKeyPrefix}focusMode`, focusMode.toString());
   }, [focusMode, storageKeyPrefix]);
-  
+
   useEffect(() => {
     localStorage.setItem(`${storageKeyPrefix}isCollapsed`, isCollapsed.toString());
   }, [isCollapsed, storageKeyPrefix]);
@@ -202,7 +202,7 @@ const getItemCollapseKey = (projectId: string, itemId: string) => {
 const getChildInitialCollapsed = (projectId: string, itemId: string) => {
   const savedState = localStorage.getItem(getItemCollapseKey(projectId, itemId));
   // If no saved state, default to collapsed (true)
-  return savedState !== 'false'; 
+  return savedState !== 'false';
 };
 
 // Add this at the top level, outside of any components
@@ -213,7 +213,7 @@ export const DragContext = createContext<{
   allItems: Item[];
 }>({
   activeId: null,
-  setActiveId: () => {},
+  setActiveId: () => { },
   projectId: null,
   allItems: [],
 });
@@ -227,7 +227,7 @@ export default function ItemList({
   const queryClient = useQueryClient();
   const list = items.filter(i => i.parent_id === parentId);
   const [activeId, setActiveId] = useState<string | null>(null);
-  
+
   // Add state for adding root items when in focus mode
   const [addingRootItem, setAddingRootItem] = useState(false);
   const [rootItemContent, setRootItemContent] = useState("");
@@ -290,7 +290,7 @@ export default function ItemList({
       // Check for URLs in content and create attachment if found
       const URL_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/;
       const urlMatch = trimmedContent.match(URL_REGEX);
-      
+
       if (urlMatch) {
         const detectedUrl = urlMatch[0];
         await supabase
@@ -304,14 +304,14 @@ export default function ItemList({
 
       // Update project timestamp
       await updateProjectTimestamp(projectId);
-      
+
       // Refresh data
       queryClient.invalidateQueries({ queryKey: ["items", projectId] });
-      
+
       // Reset the form
       setRootItemContent("");
       setAddingRootItem(false);
-      
+
       toast({ title: "Item added successfully" });
     } catch (error) {
       console.error("Error adding root item:", error);
@@ -334,11 +334,11 @@ export default function ItemList({
     if (parentId === null) {
       // Only apply global collapse state to root level
       setLocalCollapsed(isCollapsed);
-      
+
       // Update localStorage for all items (both collapsed and expanded states)
       list.forEach(item => {
         localStorage.setItem(
-          getItemCollapseKey(projectId, item.id), 
+          getItemCollapseKey(projectId, item.id),
           isCollapsed.toString()
         );
       });
@@ -359,7 +359,7 @@ export default function ItemList({
 
   // Create a sorted list by position
   const sortedList = [...list].sort((a, b) => (a.position || 0) - (b.position || 0));
-  
+
   // Handle drag start event
   function handleDragStart(event: DragStartEvent) {
     const { active } = event;
@@ -369,7 +369,7 @@ export default function ItemList({
   // Handle drag over event for parent switching
   function handleDragOver(event: DragOverEvent) {
     const { active, over } = event;
-    
+
     if (!over || active.id === over.id) return;
 
     const activeItem = items.find(item => item.id === active.id);
@@ -389,7 +389,7 @@ export default function ItemList({
       }
     }
     getItemDescendants(activeItem.id);
-    
+
     if (descendantIds.includes(overItem.id)) return;
   }
 
@@ -410,34 +410,33 @@ export default function ItemList({
     // 1. Mouse position - if it's close to the indent area
     // 2. The target item having children (or allowing children)
     // 3. Not creating circular references
-    const activator = event.activatorEvent as PointerEvent | KeyboardEvent | undefined;
-    const isShiftKeyPressed = !!activator && 'shiftKey' in activator && activator.shiftKey;
+    const isShiftKeyPressed = event.activatorEvent instanceof KeyboardEvent && event.activatorEvent.shiftKey;
     const hasOverItemChildren = items.some(i => i.parent_id === overItem.id);
 
-    // Make active item a child if Shift is held OR the over item already has children
-    const makeChild = isShiftKeyPressed || hasOverItemChildren;
-    
+    // Make active item a child of over item when Shift is pressed, or over item already has children
+    const makeChild = isShiftKeyPressed && hasOverItemChildren;
+
     if (makeChild) {
       // Target parent will be the over item
       const newParentId = overItem.id;
-      
-      // Get next position for child item 
+
+      // Get next position for child item
       const childItems = items.filter(i => i.parent_id === newParentId);
       const newPosition = (childItems.length ?? 0) + 1;
-      
+
       try {
         // Update the parent_id and position
         await supabase
           .from("items")
-          .update({ 
+          .update({
             parent_id: newParentId,
             position: newPosition
           })
           .eq("id", activeItem.id);
-          
+
         // Update project timestamp so it appears at the top of the dashboard
         await updateProjectTimestamp(projectId);
-        
+
         // Refresh data after all updates
         queryClient.invalidateQueries({ queryKey: ["items", projectId] });
         toast({ title: "Item added as child" });
@@ -451,7 +450,7 @@ export default function ItemList({
         return;
       }
     }
-    
+
     // Check if we're moving within the same parent or to a different parent
     if (activeItem.parent_id === overItem.parent_id) {
       // Same parent case - just reorder
@@ -496,55 +495,55 @@ export default function ItemList({
       const newParentId = overItem.parent_id;
       const sourceParentItems = items.filter(item => item.parent_id === activeItem.parent_id && item.id !== activeItem.id);
       const targetParentItems = items.filter(item => item.parent_id === newParentId);
-      
+
       // Find the position in the new parent's list
       const overIndex = targetParentItems.findIndex(item => item.id === over.id);
-      
+
       try {
         // 1. Update the dragged item's parent_id and position
         await supabase
           .from("items")
-          .update({ 
+          .update({
             parent_id: newParentId,
             position: overIndex + 1.5 // Put it between items initially
           })
           .eq("id", activeItem.id);
-        
+
         // 2. Update positions for all items in the new parent
         const newTargetItems = [
           ...targetParentItems.slice(0, overIndex + 1),
           { ...activeItem, parent_id: newParentId },
           ...targetParentItems.slice(overIndex + 1)
         ];
-        
+
         const positionUpdates = newTargetItems.map((item, index) => ({
           id: item.id,
           position: index + 1,
         }));
-        
+
         for (const update of positionUpdates) {
           await supabase
             .from("items")
             .update({ position: update.position })
             .eq("id", update.id);
         }
-        
+
         // 3. Update positions for all items in the old parent
         const sourcePositionUpdates = sourceParentItems.map((item, index) => ({
           id: item.id,
           position: index + 1,
         }));
-        
+
         for (const update of sourcePositionUpdates) {
           await supabase
             .from("items")
             .update({ position: update.position })
             .eq("id", update.id);
         }
-        
+
         // Update project timestamp so it appears at the top of the dashboard
         await updateProjectTimestamp(projectId);
-        
+
         // Refresh data after all updates
         queryClient.invalidateQueries({ queryKey: ["items", projectId] });
         toast({ title: "Item moved successfully" });
@@ -690,7 +689,7 @@ function SortableItemRow({ id, item, projectId, allItems, parentCollapsed }: {
 
   const { activeId } = useContext(DragContext);
   const isActive = activeId === id;
-  
+
   // Check if this item has children
   const hasChildren = allItems.some(i => i.parent_id === item.id);
 
@@ -702,7 +701,7 @@ function SortableItemRow({ id, item, projectId, allItems, parentCollapsed }: {
   };
 
   return (
-    <li 
+    <li
       className={`border-b pb-2 last:border-b-0 ${isActive ? 'opacity-50' : ''} relative`}
     >
       <div
@@ -727,10 +726,10 @@ function SortableItemRow({ id, item, projectId, allItems, parentCollapsed }: {
           />
         </div>
       </div>
-      
+
       {/* Add visual indicator to show that an item can be a drop target for children */}
       {hasChildren && (
-        <div 
+        <div
           className={`absolute top-0 left-0 w-full h-full pointer-events-none
             ${activeId && activeId !== id ? 'border-2 border-dashed border-transparent hover:border-primary-300 rounded-lg' : ''}`}
         />
@@ -752,10 +751,10 @@ function ItemRow({
 }) {
   // Get focus mode from the project controls context
   const { focusMode } = useProjectControls();
-  
+
   // Use the global Alt key state instead of tracking it per item
   const isAltPressed = useAltKey();
-  
+
   // Keep tracking hover state at the item level
   const [isHovered, setIsHovered] = useState(false);
 
@@ -768,16 +767,16 @@ function ItemRow({
   const [addingChild, setAddingChild] = useState(false);
   const [childContent, setChildContent] = useState("");
   const [childChecklist, setChildChecklist] = useState(false);
-  
+
   // Initialize isCollapsed from localStorage or parent state
   const [isCollapsed, setIsCollapsed] = useState(() => {
     // When parentCollapsed is true, we force this item to be collapsed
     if (parentCollapsed) return true;
-    
+
     // Otherwise, check localStorage for saved state
     return getChildInitialCollapsed(projectId, item.id);
   });
-  
+
   // Save collapse state to localStorage when it changes
   useEffect(() => {
     localStorage.setItem(getItemCollapseKey(projectId, item.id), isCollapsed.toString());
@@ -800,7 +799,7 @@ function ItemRow({
       setIsCollapsed(false);
     }
   }, [parentCollapsed]);
-  
+
   // Function to toggle collapse state
   const toggleCollapse = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent event bubbling
@@ -1077,22 +1076,22 @@ function ItemRow({
       // First get all descendant IDs to delete their attachments too
       const descendantIds = getAllDescendantIds(item.id, allItems);
       const allIdsToDelete = [item.id, ...descendantIds];
-      
+
       // 1. Delete all attachments for this item and its descendants
       const { error: attachmentError } = await supabase
         .from("item_attachments")
         .delete()
         .in("item_id", allIdsToDelete);
-        
+
       if (attachmentError) {
         console.error("Error deleting attachments:", attachmentError);
-        toast({ 
-          title: "Warning", 
+        toast({
+          title: "Warning",
           description: "Item deleted but some attachments may not have been removed.",
-          variant: "destructive" 
+          variant: "destructive"
         });
       }
-      
+
       // 2. For any image attachments, also delete the actual files from storage
       // Get all image attachments first
       const { data: imageAttachments } = await supabase
@@ -1100,7 +1099,7 @@ function ItemRow({
         .select("url")
         .in("item_id", allIdsToDelete)
         .eq("attachment_type", "image");
-        
+
       if (imageAttachments && imageAttachments.length > 0) {
         // Extract file paths from URLs to delete from storage
         const filePaths = imageAttachments
@@ -1117,25 +1116,25 @@ function ItemRow({
             }
           })
           .filter(Boolean); // Remove any null entries
-          
+
         // Delete files from storage if paths were extracted
         if (filePaths.length > 0) {
           const { error: storageError } = await supabase.storage
             .from('attachments') // Replace with your actual bucket name if different
             .remove(filePaths);
-            
+
           if (storageError) {
             console.error("Error deleting files from storage:", storageError);
           }
         }
       }
-      
+
       // 3. Finally delete the items (including descendants)
       const { error } = await supabase
         .from("items")
         .delete()
         .in("id", allIdsToDelete);
-        
+
       if (error) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } else {
@@ -1145,10 +1144,10 @@ function ItemRow({
       }
     } catch (error) {
       console.error("Error in delete process:", error);
-      toast({ 
-        title: "Error deleting item", 
-        description: "An unexpected error occurred", 
-        variant: "destructive" 
+      toast({
+        title: "Error deleting item",
+        description: "An unexpected error occurred",
+        variant: "destructive"
       });
     }
   }
@@ -1225,47 +1224,59 @@ function ItemRow({
   }
 
   return (
-    <div 
-      className="flex flex-col w-full"
+    <div
+      style={{
+        background: '#fff',
+        borderRadius: 10,
+        boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
+        padding: 18,
+        marginBottom: 16,
+        marginLeft: item.parent_id ? 24 : 0,
+        borderLeft: item.parent_id ? '3px solid #e0e0e0' : 'none',
+        position: 'relative',
+        transition: 'box-shadow 0.2s',
+        minWidth: 0,
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="flex gap-2 items-start w-full">
-        {hasChildren && (
-          <button
-            onClick={toggleCollapse}
-            className="mt-1 text-gray-500 hover:text-gray-700 focus:outline-none"
-            aria-label={isCollapsed ? "Expand item" : "Collapse item"}
-          >
-            {isCollapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </button>
-        )}
-        {!hasChildren && <div className="w-4"></div>}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
+          {hasChildren && (
+            <Button
+              style={{ minWidth: 32, minHeight: 32, borderRadius: '50%' }}
+              onClick={toggleCollapse}
+              aria-label={isCollapsed ? "Expand item" : "Collapse item"}
+            >
+              {isCollapsed ? (
+                <ChevronRight style={{ height: 20, width: 20, color: '#757575' }} />
+              ) : (
+                <ChevronDown style={{ height: 20, width: 20, color: '#757575' }} />
+              )}
+            </Button>
+          )}
+          {!hasChildren && <div style={{ width: 32 }}></div>}
 
-        {item.is_checklist ? (
-          <Checkbox
-            id={`item-check-${item.id}`}
-            className="mt-[5px]"
-            checked={item.is_completed}
-            onCheckedChange={toggleComplete}
-            aria-label="Toggle task completion"
-          />
-        ) : (
-          <FileText className="text-blue-600 mt-1 flex-shrink-0" />
-        )}
-        <div className="flex-grow flex flex-col gap-1 min-w-0 relative">
-          <div className="relative">
+          {item.is_checklist ? (
+            <Checkbox
+              id={`item-check-${item.id}`}
+              checked={item.is_completed}
+              onCheckedChange={toggleComplete}
+              aria-label="Toggle task completion"
+              style={{ marginTop: 2, marginRight: 4 }}
+            />
+          ) : (
+            <FileText style={{ color: '#3f51b5', marginTop: 2, marginRight: 4 }} />
+          )}
+
+          <div style={{ flexGrow: 1, minWidth: 0 }}>
             {editing ? (
-              <div className="relative">
+              <div>
                 <Textarea
                   ref={editTextAreaRef}
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  className="min-h-[40px] p-2 resize-none overflow-hidden"
+                  style={{ minHeight: 40, fontSize: 16, borderRadius: 6, border: '1px solid #ccc', padding: 10, fontFamily: 'Roboto, Arial, sans-serif', width: '100%' }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
                       e.preventDefault();
@@ -1284,229 +1295,143 @@ function ItemRow({
                     }
                   }}
                 />
-                <div className="flex justify-end mt-2 gap-2">
-                  <Button size="sm" variant="outline" onClick={cancelEdit}>
-                    Cancel
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    onClick={() => updateContentMutation.mutate(content)}
-                    disabled={!content.trim() || updateContentMutation.isPending}
-                  >
-                    Save
-                  </Button>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10 }}>
+                  <Button onClick={cancelEdit} style={{ border: '1px solid #ccc', background: '#fff', color: '#3f51b5', borderRadius: 6, padding: '4px 16px' }}>Cancel</Button>
+                  <Button onClick={() => updateContentMutation.mutate(content)} disabled={!content.trim() || updateContentMutation.isPending} style={{ background: '#3f51b5', color: '#fff', borderRadius: 6, padding: '4px 16px' }}>Save</Button>
                 </div>
               </div>
             ) : (
-              <div className="relative">
+              <div style={{ position: 'relative', minWidth: 0 }}>
                 <span
-                  className={`${(item.is_completed && item.is_checklist) ? "line-through text-muted-foreground" : ""} cursor-pointer flex-grow whitespace-pre-wrap pt-1 min-w-0 pr-6 hover:bg-muted/20 rounded ${focusMode ? "hover:after:content-['Alt+Hover_to_show_options'] hover:after:absolute hover:after:right-2 hover:after:top-1 hover:after:text-xs hover:after:opacity-50" : ""}`}
+                  style={{
+                    textDecoration: (item.is_completed && item.is_checklist) ? 'line-through' : 'none',
+                    color: (item.is_completed && item.is_checklist) ? '#aaa' : '#222',
+                    fontWeight: 500,
+                    fontSize: 17,
+                    cursor: 'pointer',
+                    paddingRight: 32,
+                    wordBreak: 'break-word',
+                  }}
                   onClick={() => setEditing(true)}
+                  title="Click to edit"
                 >
                   {item.content}
                 </span>
-                
                 {/* Add floating "+" button for all items */}
                 {!editing && (
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-5 w-5 p-0 rounded-full bg-primary/10 hover:bg-primary/20"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setAddingChild(!addingChild);
-                      if (addingChild) {
-                        setChildContent("");
-                      }
-                    }}
+                    style={{ position: 'absolute', right: 0, top: 0, minWidth: 28, minHeight: 28, borderRadius: '50%', background: '#e3e6fd', color: '#3f51b5', padding: 0 }}
+                    onClick={e => { e.stopPropagation(); setAddingChild(!addingChild); if (addingChild) setChildContent(""); }}
                     title="Add sub-item"
                   >
-                    <Plus className="h-3 w-3 text-primary" />
+                    <Plus style={{ height: 18, width: 18 }} />
                   </Button>
                 )}
               </div>
             )}
-          </div>
-
-          {/* Only show attachments when not in focus mode and this item itself is not collapsed */}
-          {!editing && !focusMode && item.item_attachments && item.item_attachments.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {item.item_attachments.map(att => (
-                <div key={att.id}>
-                  {att.attachment_type === 'url' && att.url && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-xs"
-                      asChild
-                    >
-                      <a href={att.url} target="_blank" rel="noopener noreferrer">
-                        <LinkIcon className="mr-1 h-3 w-3" />
+            {/* Attachments */}
+            {!editing && !focusMode && item.item_attachments && item.item_attachments.length > 0 && (
+              <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {item.item_attachments.map(att => (
+                  <div key={att.id}>
+                    {att.attachment_type === 'url' && att.url && (
+                      <a
+                        href={att.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          height: 28,
+                          fontSize: 13,
+                          padding: '0 10px',
+                          border: '1px solid #ccc',
+                          background: '#fff',
+                          color: '#3f51b5',
+                          borderRadius: 6,
+                          textDecoration: 'none',
+                          marginRight: 4,
+                        }}
+                      >
+                        <LinkIcon style={{ marginRight: 4, height: 15, width: 15 }} />
                         {getHostname(att.url)}
                       </a>
-                    </Button>
-                  )}
-                  {att.attachment_type === 'image' && att.url && (
-                    <Dialog open={previewImageId === att.id} onOpenChange={(open) => setPreviewImageId(open ? att.id : null)}>
-                      <DialogTrigger asChild>
-                        <img
-                          src={att.url}
-                          alt={att.label || "Attached image thumbnail"}
-                          className="max-w-[80px] max-h-[60px] rounded border cursor-pointer object-cover hover:opacity-80 transition-opacity"
-                        />
-                      </DialogTrigger>
-                      <DialogContent className="max-w-4xl p-2">
-                        <img
-                          src={att.url}
-                          alt={att.label || "Attached image preview"}
-                          className="max-w-full max-h-[80vh] object-contain mx-auto"
-                        />
-                      </DialogContent>
-                    </Dialog>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Action buttons shown when not in focus mode OR when Alt is pressed AND this specific item is hovered */}
-          {(!focusMode || (focusMode && isAltPressed && isHovered)) && !editing && (
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                accept="image/*"
-                className="hidden"
-                id={`file-upload-${item.id}`}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                title="Copy to Clipboard"
-                onClick={() => {
-                  navigator.clipboard.writeText(item.content)
-                    .then(() => toast({ title: "Copied to clipboard" }))
-                    .catch(err => toast({
-                      title: "Failed to copy",
-                      description: "Could not copy to clipboard",
-                      variant: "destructive"
-                    }));
-                }}
-                className="h-8"
-              >
-                <Copy className="w-4 h-4 sm:mr-1" />
-                <span className="hidden sm:inline">Copy</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                title="Attach Image"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={addImageAttachmentMutation.isPending}
-                className="h-8"
-              >
-                <Paperclip className="w-4 h-4 sm:mr-1" />
-                <span className="hidden sm:inline">Attach</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setEditing(true)}
-                title="Edit"
-                className="h-8"
-              >
-                <Pencil className="w-4 h-4 sm:mr-1" />
-                <span className="hidden sm:inline">Edit</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => toggleItemTypeMutation.mutate()}
-                title={item.is_checklist ? "Convert to Note" : "Convert to Task"}
-                className="h-8"
-                disabled={toggleItemTypeMutation.isPending}
-              >
-                {item.is_checklist ? (
-                  <>
-                    <MessageSquare className="w-4 h-4 sm:mr-1" />
-                    <span className="hidden sm:inline">To Note</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckSquare className="w-4 h-4 sm:mr-1" />
-                    <span className="hidden sm:inline">To Task</span>
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={deleteItem}
-                title="Delete"
-                className="h-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              >
-                <Trash2 className="w-4 h-4 sm:mr-1" />
-                <span className="hidden sm:inline">Delete</span>
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="h-8"
-                onClick={() => {
-                  setAddingChild(!addingChild);
-                  // If opening, will be focused via useEffect
-                  // If closing, clear the content
-                  if (addingChild) {
-                    setChildContent("");
-                  }
-                }}
-              >
-                <span className="mr-1 sm:mr-1">+</span>
-                <span className="hidden sm:inline">Add child</span>
-              </Button>
-            </div>
-          )}
-
-          {/* Show child form */}
-          {addingChild && (
-            <form
-              onSubmit={e => {
-                e.preventDefault();
-                addChild();
-              }}
-              className="flex gap-2 items-center pl-3 ml-0 mt-2 border-l-2 border-blue-200"
-            >
-              <Textarea
-                className="min-h-[40px] p-2 resize-none overflow-hidden"
-                placeholder="New Task (or '- ' for Note)..."
-                value={childContent}
-                autoFocus
-                onChange={e => setChildContent(e.target.value)}
-                onKeyDown={e => {
-                  // Only submit with Ctrl+Enter, normal Enter adds a new line
-                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-                    e.preventDefault();
-                    if (childContent.trim()) {
-                      addChild();
-                    }
-                  } else if (e.key === "Escape") {
-                    setAddingChild(false);
-                    setChildContent("");
-                  }
-                }}
-                onBlur={() => {
-                  if (!childContent.trim()) {
-                    setAddingChild(false);
-                  }
-                }}
-              />
-              <Button type="submit" size="sm">Add</Button>
-            </form>
-          )}
+                    )}
+                    {att.attachment_type === 'image' && att.url && (
+                      <Dialog open={previewImageId === att.id} onOpenChange={open => setPreviewImageId(open ? att.id : null)}>
+                        <DialogTrigger asChild>
+                          <img
+                            src={att.url}
+                            alt={att.label || "Attached image thumbnail"}
+                            style={{ maxWidth: 80, maxHeight: 60, borderRadius: 6, border: '1px solid #eee', cursor: 'pointer', objectFit: 'cover', transition: 'opacity 0.2s' }}
+                          />
+                        </DialogTrigger>
+                        <DialogContent style={{ maxWidth: 600, padding: 10 }}>
+                          <img
+                            src={att.url}
+                            alt={att.label || "Attached image preview"}
+                            style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain', margin: '0 auto', display: 'block' }}
+                          />
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
+        {/* Controls row: icon buttons with tooltips, right-aligned */}
+        {(!focusMode || (focusMode && isAltPressed && isHovered)) && !editing && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+            <Button title="Copy to Clipboard" style={{ minWidth: 32, minHeight: 32, borderRadius: '50%' }} onClick={() => { navigator.clipboard.writeText(item.content).then(() => toast({ title: "Copied to clipboard" })).catch(err => toast({ title: "Failed to copy", description: "Could not copy to clipboard", variant: "destructive" })); }}>
+              <Copy style={{ height: 18, width: 18 }} />
+            </Button>
+            <Button title="Attach Image" style={{ minWidth: 32, minHeight: 32, borderRadius: '50%' }} onClick={() => fileInputRef.current?.click()} disabled={addImageAttachmentMutation.isPending}>
+              <Paperclip style={{ height: 18, width: 18 }} />
+            </Button>
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" style={{ display: 'none' }} id={`file-upload-${item.id}`} />
+            <Button title="Edit" style={{ minWidth: 32, minHeight: 32, borderRadius: '50%' }} onClick={() => setEditing(true)}>
+              <Pencil style={{ height: 18, width: 18 }} />
+            </Button>
+            <Button title={item.is_checklist ? "Convert to Note" : "Convert to Task"} style={{ minWidth: 32, minHeight: 32, borderRadius: '50%' }} onClick={() => toggleItemTypeMutation.mutate()} disabled={toggleItemTypeMutation.isPending}>
+              {item.is_checklist ? <MessageSquare style={{ height: 18, width: 18 }} /> : <CheckSquare style={{ height: 18, width: 18 }} />}
+            </Button>
+            <Button title="Delete" style={{ minWidth: 32, minHeight: 32, borderRadius: '50%', color: '#d32f2f' }} onClick={deleteItem}>
+              <Trash2 style={{ height: 18, width: 18 }} />
+            </Button>
+          </div>
+        )}
       </div>
-
+      {/* Add child form */}
+      {addingChild && (
+        <form
+          onSubmit={e => { e.preventDefault(); addChild(); }}
+          style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 12, marginLeft: 32 }}
+        >
+          <Textarea
+            style={{ minHeight: 40, fontSize: 15, borderRadius: 6, border: '1px solid #ccc', padding: 10, fontFamily: 'Roboto, Arial, sans-serif', flex: 1 }}
+            placeholder="New Task (or '- ' for Note)..."
+            value={childContent}
+            autoFocus
+            onChange={e => setChildContent(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                if (childContent.trim()) {
+                  addChild();
+                }
+              } else if (e.key === "Escape") {
+                setAddingChild(false);
+                setChildContent("");
+              }
+            }}
+            onBlur={() => { if (!childContent.trim()) { setAddingChild(false); } }}
+          />
+          <Button type="submit" style={{ background: '#3f51b5', color: '#fff', borderRadius: 6, padding: '4px 16px' }}>Add</Button>
+        </form>
+      )}
+      {/* Complete confirmation dialog and children */}
       <AlertDialog open={showCompleteConfirm} onOpenChange={setShowCompleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -1521,10 +1446,9 @@ function ItemRow({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
       {/* Show nested items only when this item is not collapsed */}
       {!isCollapsed && hasChildren && (
-        <div className="mt-3 pl-3 border-l-2 border-blue-200">
+        <div style={{ marginTop: 10, marginLeft: 16, borderLeft: '2px solid #e0e0e0', paddingLeft: 12 }}>
           <ItemList
             items={allItems}
             projectId={projectId}
