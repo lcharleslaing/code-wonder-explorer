@@ -27,7 +27,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { updateProjectTimestamp } from "@/utils/updateProjectTimestamp";
-import { theme } from "@/theme";
 
 // Add imports for the ProjectControls components
 import { ProjectControlsProvider, useProjectControls } from "@/components/ItemList";
@@ -46,41 +45,40 @@ function ProjectNavbar() {
   const navigate = useNavigate();
 
   return (
-    <div
-      style={{
-        position: "sticky",
-        top: 64,
-        zIndex: 40,
-        width: "100%",
-        background: "#fff",
-        borderBottom: "1px solid #eee",
-        boxShadow: "0 1px 4px rgba(0,0,0,0.03)",
-        fontFamily: "Roboto, Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: theme.containerMaxWidth,
-          margin: "0 auto",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          height: 56,
-          padding: `0 ${theme.spacing.md}px`,
-        }}
-      >
+    <div style={{
+      position: 'sticky',
+      top: 64,
+      zIndex: 40,
+      width: '100%',
+      background: '#fff',
+      borderBottom: '1px solid #eee',
+      boxShadow: '0 1px 4px rgba(0,0,0,0.03)',
+      fontFamily: 'Roboto, Arial, sans-serif',
+    }}>
+      <div style={{
+        maxWidth: 1200,
+        margin: '0 auto',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        height: 56,
+        padding: '0 24px',
+      }}>
         <Button
-          variant="outline"
-          style={{ marginRight: theme.spacing.xs }}
+          style={{ background: 'none', border: '1px solid #3f51b5', color: '#3f51b5', fontWeight: 500, borderRadius: 6, padding: '6px 16px', marginRight: 12, cursor: 'pointer', transition: 'background 0.2s' }}
           onClick={() => navigate("/")}
+          onMouseOver={e => (e.currentTarget.style.background = '#f5f5f5')}
+          onMouseOut={e => (e.currentTarget.style.background = 'none')}
         >
           ← Back to Dashboard
         </Button>
-        <div style={{ display: 'flex', gap: theme.spacing.xs }}>
+        <div style={{ display: 'flex', gap: 12 }}>
           {hasChildren && (
             <Button
-              variant="outline"
+              style={{ background: 'none', border: '1px solid #3f51b5', color: '#3f51b5', fontWeight: 500, borderRadius: 6, padding: '6px 16px', cursor: 'pointer', transition: 'background 0.2s' }}
               onClick={toggleCollapsed}
+              onMouseOver={e => (e.currentTarget.style.background = '#f5f5f5')}
+              onMouseOut={e => (e.currentTarget.style.background = 'none')}
             >
               {isCollapsed ? (
                 <><ChevronsRight style={{ height: 18, width: 18, marginRight: 6 }} /> Expand All</>
@@ -90,8 +88,10 @@ function ProjectNavbar() {
             </Button>
           )}
           <Button
-            variant={focusMode ? 'default' : 'outline'}
+            style={{ background: focusMode ? '#3f51b5' : 'none', color: focusMode ? '#fff' : '#3f51b5', border: '1px solid #3f51b5', fontWeight: 500, borderRadius: 6, padding: '6px 16px', cursor: 'pointer', transition: 'background 0.2s' }}
             onClick={toggleFocusMode}
+            onMouseOver={e => (e.currentTarget.style.background = focusMode ? '#3949ab' : '#f5f5f5')}
+            onMouseOut={e => (e.currentTarget.style.background = focusMode ? '#3f51b5' : 'none')}
           >
             {focusMode ? (
               <><Eye style={{ height: 18, width: 18, marginRight: 6 }} /> Normal View</>
@@ -290,17 +290,17 @@ export default function ProjectPage() {
 
   return (
     <ProjectControlsProvider projectId={projectId as string}>
-      <div style={{ background: theme.colors.background, minHeight: '100vh', fontFamily: 'Roboto, Arial, sans-serif' }}>
+      <div style={{ background: '#fafbfc', minHeight: '100vh', fontFamily: 'Roboto, Arial, sans-serif' }}>
         {/* Secondary navbar with solid bg and no gap */}
         <ProjectNavbar />
         {/* Main content area with padding for sticky navbar */}
-        <div style={{ maxWidth: 900, margin: '0 auto', padding: `${theme.spacing.lg}px 0` }}>
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 0' }}>
           <div style={{
             background: '#fff',
             borderRadius: 12,
             boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            padding: `${theme.spacing.lg}px ${theme.spacing.lg}px ${theme.spacing.md}px ${theme.spacing.lg}px`,
-            marginBottom: theme.spacing.lg,
+            padding: '32px 32px 24px 32px',
+            marginBottom: 32,
           }}>
             <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 8 }}>{project.title}</h1>
             {project.description && (
@@ -355,15 +355,13 @@ function ProjectContent({
     <>
       {/* Only show the add form when not in focus mode */}
       {!focusMode && (
-        <div
-          style={{
-            background: '#fff',
-            borderRadius: 12,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            padding: theme.spacing.md,
-            marginBottom: theme.spacing.lg,
-          }}
-        >
+        <div style={{
+          background: '#fff',
+          borderRadius: 12,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          padding: 24,
+          marginBottom: 32,
+        }}>
           <h2 style={{ fontWeight: 600, fontSize: 22, marginBottom: 12 }}>Add Note or Checklist</h2>
           <AddItemForm onAdd={addRootItem} />
         </div>
@@ -372,18 +370,16 @@ function ProjectContent({
         background: '#fff',
         borderRadius: 12,
         boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-        padding: theme.spacing.md,
-        marginBottom: theme.spacing.lg,
+        padding: 24,
+        marginBottom: 32,
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.sm }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
           <h2 style={{ fontWeight: 600, fontSize: 22 }}>{project.title} Tasks & Notes</h2>
-          <div style={{ display: 'flex', gap: theme.spacing.xs, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             {focusMode && (
               <Dialog open={addItemDialogOpen} onOpenChange={setAddItemDialogOpen}>
                 <DialogTrigger>
-                  <Button>
-                    <Plus style={{ height: 18, width: 18, marginRight: 6 }} /> Add Item
-                  </Button>
+                  <Button style={{ height: 36, background: '#3f51b5', color: '#fff', borderRadius: 6, fontWeight: 500, padding: '0 18px', fontSize: 15 }}> <Plus style={{ height: 18, width: 18, marginRight: 6 }} /> Add Item </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
@@ -457,11 +453,11 @@ function AddItemForm({ onAdd }: { onAdd: (params: { content: string }) => void }
   return (
     <form
       onSubmit={handleSubmit}
-      style={{ display: 'flex', gap: theme.spacing.xs, alignItems: 'flex-end', width: '100%' }}
+      style={{ display: 'flex', gap: 12, alignItems: 'flex-end', width: '100%' }}
     >
       <Textarea
         ref={textareaRef}
-        style={{ flexGrow: 1, minHeight: 40, resize: 'none', overflow: 'hidden', fontSize: 16, borderRadius: 6, border: `1px solid ${theme.colors.border}`, padding: theme.spacing.xs, fontFamily: 'Roboto, Arial, sans-serif' }}
+        style={{ flexGrow: 1, minHeight: 40, resize: 'none', overflow: 'hidden', fontSize: 16, borderRadius: 6, border: '1px solid #ccc', padding: 12, fontFamily: 'Roboto, Arial, sans-serif' }}
         placeholder="New Task (or '- ' for Note)..."
         value={content}
         onChange={e => setContent(e.target.value)}
@@ -485,7 +481,7 @@ function AddItemForm({ onAdd }: { onAdd: (params: { content: string }) => void }
         required
         rows={1}
       />
-      <Button type="submit">Add</Button>
+      <Button type="submit" style={{ height: 40, background: '#3f51b5', color: '#fff', borderRadius: 6, fontWeight: 500, padding: '0 18px', fontSize: 15 }}>Add</Button>
     </form>
   );
 }

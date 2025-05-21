@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 5173",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
@@ -62,10 +62,7 @@
     "recharts": "^2.12.7",
     "sonner": "^1.5.0",
     "supabase": "^2.20.12",
-    "@mui/material": "^5.15.21",
-    "@mui/icons-material": "^5.15.21",
-    "@emotion/react": "^11.11.4",
-    "@emotion/styled": "^11.11.4",
+    "tailwind-merge": "^3.3.0",
     "vaul": "^0.9.3",
     "zod": "^3.23.8"
   },

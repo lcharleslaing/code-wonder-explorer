@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { LogoutButton } from "@/components/LogoutButton";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { theme } from "@/theme";
 
 interface NavbarProps {
   onOpenSideDrawer: () => void;
@@ -24,32 +23,13 @@ export function Navbar({ onOpenSideDrawer }: NavbarProps) {
   return (
     <nav
       style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 50,
-        background: "#fff",
-        boxShadow: scrolled ? "0 2px 8px rgba(0,0,0,0.08)" : "none",
-        padding: scrolled ? `${theme.spacing.sm}px 0` : `${theme.spacing.md}px 0`,
-        transition: "all 0.3s",
-        fontFamily: "Roboto, Arial, sans-serif",
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50, background: '#fff', boxShadow: scrolled ? '0 2px 8px rgba(0,0,0,0.08)' : 'none', padding: scrolled ? '8px 0' : '16px 0', transition: 'all 0.3s', fontFamily: 'Roboto, Arial, sans-serif'
       }}
     >
-      <div
-        style={{
-          maxWidth: theme.containerMaxWidth,
-          margin: "0 auto",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: theme.spacing.sm }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Button
-            variant="ghost"
-            size="icon"
-            style={{ marginRight: theme.spacing.xs }}
+            style={{ minWidth: 40, minHeight: 40, marginRight: 8, background: 'none', border: 'none', boxShadow: 'none' }}
             onClick={onOpenSideDrawer}
             aria-label="Menu"
           >
@@ -69,50 +49,17 @@ export function Navbar({ onOpenSideDrawer }: NavbarProps) {
               <line x1="4" x2="20" y1="18" y2="18" />
             </svg>
           </Button>
-          <Link
-            to="/"
-            style={{
-              fontSize: 22,
-              fontWeight: 700,
-              color: theme.colors.text,
-              textDecoration: "none",
-              letterSpacing: 1,
-            }}
-          >
-            Produx
-          </Link>
+          <Link to="/" style={{ fontSize: 22, fontWeight: 700, color: '#333', textDecoration: 'none', letterSpacing: 1 }}>Produx</Link>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: theme.spacing.md }}>
-          <Link
-            to="/"
-            style={{
-              fontSize: 15,
-              fontWeight: 500,
-              color: "#555",
-              textDecoration: "none",
-              marginRight: theme.spacing.xs,
-            }}
-          >
-            Dashboard
-          </Link>
-          <Link
-            to="/settings"
-            style={{
-              fontSize: 15,
-              fontWeight: 500,
-              color: "#555",
-              textDecoration: "none",
-              marginRight: theme.spacing.xs,
-            }}
-          >
-            Settings
-          </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+          <Link to="/" style={{ fontSize: 15, fontWeight: 500, color: '#555', textDecoration: 'none', marginRight: 8 }}>Dashboard</Link>
+          <Link to="/settings" style={{ fontSize: 15, fontWeight: 500, color: '#555', textDecoration: 'none', marginRight: 8 }}>Settings</Link>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: theme.spacing.sm }}>
-          <Button variant="outline" asChild>
-            <Link to="/auth">Get Started</Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <Button style={{ border: '1px solid #3f51b5', color: '#3f51b5', background: 'none', fontWeight: 500, letterSpacing: 1 }}>
+            <Link to="/auth" style={{ color: '#3f51b5', textDecoration: 'none', fontWeight: 500 }}>Get Started</Link>
           </Button>
           <LogoutButton />
         </div>

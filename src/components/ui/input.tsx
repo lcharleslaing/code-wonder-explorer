@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   ({ ...props }, ref) => {
     React.useEffect(() => {
+      // @ts-expect-error: mdc is injected by Material Components Web CDN and not typed in TS
       if (window.mdc && window.mdc.autoInit) window.mdc.autoInit();
     }, []);
     return (
